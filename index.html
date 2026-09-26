@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club Wars — Attack Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12151a;
+    --panel: #1a1f26;
+    --panel-raised: #212a33;
+    --border: #2c3440;
+    --text: #eef1f5;
+    --muted: #8b96a3;
+    --damage: #ff6b45;
+    --energy: #3ac6e0;
+    --points: #f4b731;
+    --good: #52c77e;
+    --bottleneck: #ff5577;
+    --violet: #a78bfa;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.5;
+  }
+  h1,h2,h3, .display{
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin: 0;
+  }
+  .wrap{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+  header.top{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 18px;
+    margin: 0 -20px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+    box-shadow: 0 8px 16px -8px rgba(0,0,0,0.5);
+  }
+  header.top h1{
+    font-size: 30px;
+    color: var(--text);
+  }
+  header.top .sub{
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  .ribbon{
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+  .stat{
+    text-align: right;
+  }
+  .stat .n{
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat .l{
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+  .stat.points .n{ color: var(--points); }
+  .stat.energy .n{ color: var(--energy); }
+  .stat.attacks .n{ color: var(--text); }
+
+  .grid{
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 22px;
+  }
+  @media (max-width: 860px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel h2{
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  .panel-head-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .panel-head-row h2{ margin-bottom: 0; }
+  .sort-btn{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sort-btn:hover{ border-color: var(--energy); color: var(--energy); }
+  .panel .desc{
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+
+  .item-row{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .item-row:last-child{ border-bottom: none; }
+  .item-row label{
+    font-size: 13.5px;
+  }
+  .stepper{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stepper button{
+    width: 26px; height: 26px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .stepper button:hover{ border-color: var(--energy); color: var(--energy); }
+  .stepper input{
+    width: 52px;
+    text-align: center;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 5px 2px;
+  }
+  .item-row.full input{ border-color: var(--energy); color: var(--energy); }
+  .item-row.spare input{ border-color: var(--good); color: var(--good); }
+
+  table{
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td{
+    text-align: left;
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  th{
+    color: var(--muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+  }
+  td.num, th.num{ text-align: right; font-variant-numeric: tabular-nums; }
+  tr.jackpot td{ background: rgba(244,183,49,0.08); }
+  .tag{
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--panel-raised);
+    color: var(--points);
+    border: 1px solid rgba(244,183,49,0.4);
+  }
+
+  .fire-btn{
+    background: rgba(255,107,69,0.12);
+    border: 1px solid var(--damage);
+    color: var(--damage);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    width: 100%;
+  }
+  .fire-btn:hover{ background: var(--damage); color: #1a0a06; }
+  .fire-btn:active{ transform: scale(0.97); }
+
+  .callout{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--good);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 16px;
+    font-size: 13.5px;
+  }
+  .callout .head{
+    font-family:'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--good);
+    margin-bottom: 4px;
+  }
+  .callout.warn{ border-left-color: var(--bottleneck); }
+  .callout.warn .head{ color: var(--bottleneck); }
+  .callout.info{ border-left-color: var(--energy); }
+  .callout.info .head{ color: var(--energy); }
+
+  .give-list{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .give-chip{
+    background: var(--panel-raised);
+    border: 1px solid var(--good);
+    color: var(--good);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+  }
+  .give-chip.tight{
+    border-color: var(--bottleneck);
+    color: var(--bottleneck);
+  }
+
+  details{
+    margin-top: 22px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  summary{
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+  }
+  summary::marker{ color: var(--energy); }
+  .card-editor{
+    margin-top: 14px;
+    display: grid;
+    gap: 8px;
+  }
+  .card-row{
+    display: grid;
+    grid-template-columns: 130px 1fr 70px 70px 26px;
+    gap: 8px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .card-row .name{ color: var(--muted); }
+  .card-row input.name-input{
+    width: 100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .card-row .del-btn{
+    width: 24px; height: 24px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--bottleneck);
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .card-row .del-btn:hover{ border-color: var(--bottleneck); }
+  .add-card-btn{
+    margin-top: 12px;
+    background: var(--panel-raised);
+    border: 1px dashed var(--border);
+    color: var(--energy);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .add-card-btn:hover{ border-color: var(--energy); }
+  .card-row input.recipe{
+    width: 100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .card-row input.small{
+    width: 100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+  }
+  .card-editor-head{
+    display: grid;
+    grid-template-columns: 130px 1fr 70px 70px 26px;
+    gap: 8px;
+    font-size: 10.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .burst-box{
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .burst-box label{ font-size: 13px; color: var(--muted); }
+  .burst-box input{
+    width: 70px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  footer{
+    margin-top: 30px;
+    color: var(--muted);
+    font-size: 11.5px;
+    text-align: center;
+  }
+  .reset-link{
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 0;
+  }
+  .reset-link:hover{ color: var(--bottleneck); }
+
+  .booster-ref{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 10px;
+  }
+  .booster-card{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .booster-card .bname{
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .booster-card .blevels{
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .booster-card .beffect{
+    font-size: 12.5px;
+    color: var(--text);
+    margin-top: 6px;
+  }
+  .booster-card .btip{
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .booster-card.highlight{ border-color: var(--violet); }
+  .booster-card.highlight .bname{ color: var(--violet); }
+
+  .jp-window{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--violet);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 12px;
+  }
+  .jp-window .jhead{
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--violet);
+    margin-bottom: 8px;
+  }
+  .jp-window .jtotal{
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  .jp-window .jtotal .x2{
+    color: var(--violet);
+    font-weight: 600;
+  }
+  .jp-empty{
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .modal-overlay{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open{ display: flex; }
+  .modal-box{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-box h3{
+    font-size: 19px;
+    margin-bottom: 4px;
+  }
+  .modal-box .desc{ margin-bottom: 16px; }
+  .recipe-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .recipe-item{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .recipe-item label{ font-size: 12.5px; }
+  .recipe-item input{
+    width: 48px;
+    text-align: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 4px 2px;
+  }
+  .modal-actions{
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .modal-actions button{
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 7px;
+    padding: 9px 18px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .modal-actions .btn-cancel{ background: var(--panel-raised); color: var(--muted); }
+  .modal-actions .btn-save{ background: var(--energy); color: #0a1418; border-color: var(--energy); }
+  .card-row .recipe-btn{
+    width: 100%;
+    text-align: left;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-row .recipe-btn:hover{ border-color: var(--energy); }
+  .card-row .recipe-btn.empty{ color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>War Room</h1>
+      <div class="sub">Club Wars attack optimizer — enter your depot, get the mathematically best attack sequence</div>
+    </div>
+    <div class="ribbon">
+      <div class="stat points"><div class="n" id="totalPts">0</div><div class="l">War Points</div></div>
+      <div class="stat energy"><div class="n" id="totalEnergy">0</div><div class="l">Energy Used</div></div>
+      <div class="stat attacks"><div class="n" id="totalAttacks">0</div><div class="l">Attacks</div></div>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <div class="panel" id="depotPanel">
+      <div class="panel-head-row">
+        <h2>Depot</h2>
+        <button type="button" class="sort-btn" id="sortBtn" title="Reorder the list by current amount">⇅ Sort by amount</button>
+      </div>
+      <div class="desc">Enter what you currently have. The plan recalculates as you type — the list only reorders when you press Sort, so nothing jumps around while you're editing.</div>
+      <div id="itemRows"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>Optimal Attack Plan</h2>
+        <div class="desc">Sorted by points-per-energy — fire from the top down if you might get interrupted. This is an exhaustive search, not a heuristic: it is mathematically the best possible use of your current depot. Hit "Fire" after each cast and your depot updates automatically.</div>
+        <table>
+          <colgroup>
+            <col style="width:22%"><col style="width:9%"><col style="width:12%">
+            <col style="width:13%"><col style="width:12%"><col style="width:13%"><col style="width:19%">
+          </colgroup>
+          <thead>
+            <tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts/Cast</th><th class="num">Total Pts</th><th class="num">Energy/Cast</th><th class="num">Total Energy</th><th></th></tr>
+          </thead>
+          <tbody id="planBody"></tbody>
+        </table>
+        <div id="emptyPlanMsg" style="display:none; color: var(--muted); padding: 14px 0; font-size: 13px;">No attacks are castable with your current depot yet — add some items on the left.</div>
+      </div>
+
+      <div class="callout" id="safestCallout" style="display:none;">
+        <div class="head">Safest attack to fire right now</div>
+        <div id="safestText"></div>
+      </div>
+
+      <div class="callout info" id="giveCallout" style="display:none;">
+        <div class="head">Safe to give teammates</div>
+        <div id="giveText">Everything left over after the optimal plan, with zero cost to your own attacks.</div>
+        <div class="give-list" id="giveList"></div>
+      </div>
+
+      <div class="callout warn" id="bottleneckCallout" style="display:none;">
+        <div class="head">Bottleneck items</div>
+        <div id="bottleneckText"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <details open>
+    <summary>Energy-bank burst planner (for Jackpot windows)</summary>
+    <div class="desc" style="margin-top:8px;">Finds the best possible subset of your <em>already-optimal</em> plan that fits inside one energy bank — zero opportunity cost, just resequenced. Use this to time a Jackpot or any full-bank opening strike.</div>
+    <div class="burst-box" style="margin-top:12px;">
+      <label>Energy bank size</label>
+      <input type="number" id="energyBank" value="12" min="1">
+      <span style="color:var(--muted); font-size:12px;">Space Rock Rumble and most late arenas cap at 12 — change if yours differs.</span>
+    </div>
+    <table>
+      <colgroup>
+        <col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%">
+      </colgroup>
+      <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts</th><th class="num">Energy</th></tr></thead>
+      <tbody id="burstBody"></tbody>
+    </table>
+    <div style="margin-top:8px; font-size:13px;">Burst total: <strong id="burstPts">0</strong> points using <strong id="burstEnergy">0</strong> energy</div>
+  </details>
+
+  <details>
+    <summary>Disaster card settings</summary>
+    <div class="desc" style="margin-top:8px;">Update points, energy cost, or item recipe whenever a card levels up, or add a card you've newly unlocked. Item recipe format: <code>Item:qty, Item:qty</code> — use the exact item names shown in the Depot panel.</div>
+    <div class="card-editor-head">
+      <div>Card</div><div>Items needed</div><div>Points</div><div>Energy</div><div></div>
+    </div>
+    <div class="card-editor" id="cardEditor"></div>
+    <button type="button" class="add-card-btn" id="addCardBtn">+ Add new disaster</button>
+  </details>
+
+  <details>
+    <summary>Battle boosters</summary>
+    <div class="desc" style="margin-top:8px;">Boosters don't cost energy and aren't tied to your item depot, so they sit outside the main optimizer — but Jackpot is worth planning around, since it doubles the war points earned by every hit landed on the target city while it's active.</div>
+
+    <div class="burst-box" style="margin-top:14px;">
+      <label>Jackpot boosters you have</label>
+      <input type="number" id="jackpotCount" value="0" min="0">
+      <span style="color:var(--muted); font-size:12px;">Each one gets its own best-fit energy-bank window, pulled from your existing plan — zero cost to the rest of it.</span>
+    </div>
+    <div id="jackpotWindows"></div>
+
+    <div class="booster-ref" id="boosterRef" style="margin-top:18px;"></div>
+  </details>
+
+  <footer>
+    Built for Club Wars — Space Rock Rumble era. Your depot and disaster settings are saved automatically on this device — closing and reopening this file will remember them.
+    <div style="margin-top:8px;"><button type="button" class="reset-link" id="resetBtn">Reset everything to defaults</button></div>
+  </footer>
+</div>
+
+<div class="modal-overlay" id="recipeModal">
+  <div class="modal-box">
+    <h3 id="recipeModalTitle">Items needed</h3>
+    <div class="desc">Set how many of each item this disaster needs. Leave anything not required at 0.</div>
+    <div class="recipe-grid" id="recipeGrid"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="recipeCancelBtn">Cancel</button>
+      <button type="button" class="btn-save" id="recipeSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Data ----------
+const ITEMS = ["Propeller","Pliers","FireHydrant","Ammo","Gasoline","Medkit","Plunger","RubberBoots","Megaphone","Duck","Anvil","Binoculars"];
+const ITEM_LABELS = {
+  Propeller:"Propeller", Pliers:"Pliers", FireHydrant:"Fire Hydrant", Ammo:"Ammo",
+  Gasoline:"Gasoline", Medkit:"Medkit", Plunger:"Plunger", RubberBoots:"Rubber Boots",
+  Megaphone:"Megaphone", Duck:"Rubber Duck", Anvil:"Anvil", Binoculars:"Binoculars"
+};
+
+const DEFAULT_CARDS = [
+  {name:"Comic Hand",      items:{Plunger:1,Duck:1},                     pts:110,  energy:1},
+  {name:"Shrink Ray",      items:{Pliers:1,Megaphone:2},                 pts:300,  energy:3},
+  {name:"Not in Kansas",   items:{Anvil:1,Propeller:1},                  pts:300,  energy:4},
+  {name:"Magnetism",       items:{Binoculars:1,FireHydrant:2,Anvil:2},   pts:365,  energy:2},
+  {name:"Tentacle Vortex", items:{Plunger:1,Duck:1,Propeller:2},         pts:220,  energy:3},
+  {name:"Disco Twister",   items:{Megaphone:1,Pliers:1,Propeller:2},     pts:600,  energy:6},
+  {name:"Blizzaster",      items:{Propeller:1,Ammo:2,Duck:3},            pts:725,  energy:6},
+  {name:"Hands of Doom",   items:{Ammo:2,Duck:2,Pliers:5},               pts:800,  energy:8},
+  {name:"16 Tons",         items:{Pliers:1,FireHydrant:2,Anvil:4},       pts:600,  energy:6},
+  {name:"Spiders",         items:{Gasoline:1,Binoculars:2,Ammo:5},       pts:990,  energy:9},
+  {name:"Building Portal", items:{FireHydrant:3,Plunger:3,Propeller:4}, pts:880,  energy:7},
+  {name:"B Movie Monster", items:{RubberBoots:2,Plunger:2,Megaphone:2},  pts:1000, energy:8},
+  {name:"Mellow Bellow",   items:{Megaphone:4,Pliers:3,Propeller:4},     pts:1330, energy:8},
+  {name:"Shield Buster",   items:{Gasoline:5,Medkit:1},                  pts:700,  energy:7},
+];
+
+function cloneDefaultCards(){
+  return DEFAULT_CARDS.map(c => ({ name:c.name, items:Object.assign({}, c.items), pts:c.pts, energy:c.energy }));
+}
+
+let cards = cloneDefaultCards();
+
+let depot = {};
+ITEMS.forEach(i => depot[i] = 0);
+
+// ---------- Save / load (browser local storage — this file runs on your own device, nothing leaves it) ----------
+const STORAGE_KEY = 'clubWarsOptimizerState_v1';
+
+function saveState(){
+  try{
+    const state = {
+      cards: cards,
+      depot: depot,
+      energyBank: document.getElementById('energyBank').value,
+      jackpotCount: document.getElementById('jackpotCount').value
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e){
+    // storage unavailable (private browsing, etc.) — fail silently, tool still works, just won't remember
+  }
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (state.cards && Array.isArray(state.cards) && state.cards.length){
+      cards = state.cards;
+    }
+    if (state.depot){
+      ITEMS.forEach(i => { depot[i] = parseInt(state.depot[i]) || 0; });
+    }
+    if (state.energyBank) document.getElementById('energyBank').value = state.energyBank;
+    if (state.jackpotCount) document.getElementById('jackpotCount').value = state.jackpotCount;
+  } catch(e){
+    // corrupted or unavailable storage — just start from defaults
+  }
+}
+
+function resetAllData(){
+  const ok = confirm('This clears every saved disaster setting and depot number on this device, back to factory defaults. This cannot be undone. Continue?');
+  if (!ok) return;
+  try{ localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  cards = cloneDefaultCards();
+  ITEMS.forEach(i => depot[i] = 0);
+  document.getElementById('energyBank').value = 12;
+  document.getElementById('jackpotCount').value = 0;
+  renderItemRows();
+  buildCardEditor();
+  recalc();
+}
+
+// ---------- Solver: exhaustive branch-and-bound (guaranteed optimal) ----------
+function maxCastable(card, d, energyLeft){
+  let limits = [];
+  if (energyLeft !== Infinity) limits.push(Math.floor(energyLeft / card.energy));
+  for (const item in card.items){
+    limits.push(Math.floor((d[item]||0) / card.items[item]));
+  }
+  return limits.length ? Math.min(...limits) : 0;
+}
+
+function optimize(startDepot, cardList, energyCap){
+  if (energyCap === undefined) energyCap = Infinity;
+  const order = cardList.slice().sort((a,b)=> b.pts - a.pts);
+  const n = order.length;
+  let best = { pts:0, combo:{} };
+
+  function upperBound(idx, remaining, ptsSoFar, energyLeft){
+    let bound = ptsSoFar;
+    for (let j=idx; j<n; j++){
+      bound += maxCastable(order[j], remaining, energyLeft) * order[j].pts;
+    }
+    return bound;
+  }
+
+  function dfs(idx, remaining, chosen, ptsSoFar, energyLeft){
+    if (idx === n){
+      if (ptsSoFar > best.pts){ best.pts = ptsSoFar; best.combo = Object.assign({}, chosen); }
+      return;
+    }
+    if (upperBound(idx, remaining, ptsSoFar, energyLeft) <= best.pts) return;
+    const card = order[idx];
+    const mc = maxCastable(card, remaining, energyLeft);
+    for (let k=mc; k>=0; k--){
+      const nr = Object.assign({}, remaining);
+      for (const item in card.items) nr[item] -= card.items[item]*k;
+      chosen[card.name] = k;
+      dfs(idx+1, nr, chosen, ptsSoFar + k*card.pts,
+          energyLeft===Infinity ? Infinity : energyLeft - k*card.energy);
+    }
+    chosen[card.name] = 0;
+  }
+
+  dfs(0, Object.assign({}, startDepot), {}, 0, energyCap);
+  return best;
+}
+
+function bestBurstFromPlan(planCombo, cardList, energyCap){
+  const order = cardList.filter(c => planCombo[c.name] > 0).sort((a,b)=> b.pts - a.pts);
+  let best = { pts:0, combo:{} };
+  function dfs(idx, energyLeft, chosen, ptsSoFar){
+    if (idx === order.length){
+      if (ptsSoFar > best.pts){ best.pts = ptsSoFar; best.combo = Object.assign({}, chosen); }
+      return;
+    }
+    const card = order[idx];
+    const maxCount = planCombo[card.name];
+    const maxK = Math.min(maxCount, Math.floor(energyLeft / card.energy));
+    for (let k=maxK; k>=0; k--){
+      chosen[card.name] = k;
+      dfs(idx+1, energyLeft - k*card.energy, chosen, ptsSoFar + k*card.pts);
+    }
+    chosen[card.name] = 0;
+  }
+  dfs(0, energyCap, {}, 0);
+  return best;
+}
+
+// ---------- Rendering ----------
+function renderItemRows(){
+  const container = document.getElementById('itemRows');
+  const sortedItems = ITEMS.slice().sort((a,b) => {
+    const diff = (depot[b]||0) - (depot[a]||0);
+    if (diff !== 0) return diff;
+    return ITEMS.indexOf(a) - ITEMS.indexOf(b); // stable tiebreak, keeps a consistent order for ties
+  });
+
+  container.innerHTML = '';
+  sortedItems.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.id = 'row-' + item;
+    row.innerHTML = `
+      <label for="in-${item}">${ITEM_LABELS[item]}</label>
+      <div class="stepper">
+        <button type="button" data-item="${item}" data-dir="-1">−</button>
+        <input type="number" id="in-${item}" min="0" value="${depot[item]||0}">
+        <button type="button" data-item="${item}" data-dir="1">+</button>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.dataset.item;
+      const dir = parseInt(btn.dataset.dir);
+      let v = (depot[item]||0) + dir;
+      if (v < 0) v = 0;
+      depot[item] = v;
+      const inp = document.getElementById('in-' + item);
+      if (inp) inp.value = v;
+      recalc(); // numbers update live, order stays put until Sort is pressed
+    });
+  });
+
+  container.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const item = inp.id.replace('in-', '');
+      let v = parseInt(inp.value || 0);
+      if (isNaN(v) || v < 0) v = 0;
+      depot[item] = v;
+      recalc(); // live numbers update while typing, order stays put
+    });
+  });
+}
+
+document.getElementById('sortBtn').addEventListener('click', () => {
+  renderItemRows();
+});
+
+function buildCardEditor(){
+  const container = document.getElementById('cardEditor');
+  container.innerHTML = '';
+  cards.forEach((card, idx) => {
+    const row = document.createElement('div');
+    row.className = 'card-row';
+    const entries = Object.entries(card.items);
+    const summary = entries.length
+      ? entries.map(([k,v]) => `${ITEM_LABELS[k]||k} ×${v}`).join(', ')
+      : 'No items set — click to add';
+    row.innerHTML = `
+      <input class="name-input" data-idx="${idx}" data-field="name" value="${card.name}">
+      <button type="button" class="recipe-btn${entries.length?'':' empty'}" data-idx="${idx}" title="${summary}">${summary}</button>
+      <input class="small" data-idx="${idx}" data-field="pts" value="${card.pts}">
+      <input class="small" data-idx="${idx}" data-field="energy" value="${card.energy}">
+      <button type="button" class="del-btn" data-idx="${idx}" title="Remove this card">×</button>
+    `;
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll('input.name-input, input.small').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const idx = parseInt(inp.dataset.idx);
+      const field = inp.dataset.field;
+      if (field === 'pts' || field === 'energy'){
+        const v = parseFloat(inp.value);
+        if (!isNaN(v) && v >= 0) cards[idx][field] = v;
+      } else if (field === 'name'){
+        const v = inp.value.trim();
+        if (v) cards[idx].name = v;
+      }
+      recalc();
+    });
+  });
+
+  container.querySelectorAll('.recipe-btn').forEach(btn => {
+    btn.addEventListener('click', () => openRecipeModal(parseInt(btn.dataset.idx)));
+  });
+
+  container.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      cards.splice(idx, 1);
+      buildCardEditor();
+      recalc();
+    });
+  });
+}
+
+document.getElementById('addCardBtn').addEventListener('click', () => {
+  let n = 1;
+  let name = 'New Disaster';
+  while (cards.some(c => c.name === name)){
+    n += 1;
+    name = `New Disaster ${n}`;
+  }
+  cards.push({ name, items:{}, pts:100, energy:1 });
+  buildCardEditor();
+  recalc();
+});
+
+// ---------- Recipe modal (simple item-quantity picker) ----------
+let editingCardIdx = null;
+
+function openRecipeModal(idx){
+  editingCardIdx = idx;
+  const card = cards[idx];
+  document.getElementById('recipeModalTitle').textContent = `Items needed — ${card.name}`;
+  const grid = document.getElementById('recipeGrid');
+  grid.innerHTML = '';
+  ITEMS.forEach(item => {
+    const wrap = document.createElement('div');
+    wrap.className = 'recipe-item';
+    const current = card.items[item] || 0;
+    wrap.innerHTML = `
+      <label for="rq-${item}">${ITEM_LABELS[item]}</label>
+      <input type="number" id="rq-${item}" min="0" value="${current}">
+    `;
+    grid.appendChild(wrap);
+  });
+  document.getElementById('recipeModal').classList.add('open');
+}
+
+function closeRecipeModal(){
+  document.getElementById('recipeModal').classList.remove('open');
+  editingCardIdx = null;
+}
+
+document.getElementById('recipeCancelBtn').addEventListener('click', closeRecipeModal);
+document.getElementById('recipeModal').addEventListener('click', (e) => {
+  if (e.target.id === 'recipeModal') closeRecipeModal();
+});
+
+document.getElementById('recipeSaveBtn').addEventListener('click', () => {
+  if (editingCardIdx === null) return;
+  const newItems = {};
+  ITEMS.forEach(item => {
+    const v = parseInt(document.getElementById('rq-' + item).value) || 0;
+    if (v > 0) newItems[item] = v;
+  });
+  cards[editingCardIdx].items = newItems;
+  closeRecipeModal();
+  buildCardEditor();
+  recalc();
+});
+
+// ---------- Battle boosters (reference + Jackpot window planner) ----------
+const BOOSTERS = [
+  { name:"Jackpot",       levels:3, effect:"Doubles the war points earned from every hit landed on the target city while active.", tip:"Coordinate with teammates and unload your biggest attacks on the target during the window." },
+  { name:"Energy Pump",   levels:3, effect:"Speeds up your own city's energy regeneration for the duration.", tip:"Pop it right after a big attack to refill faster and keep pressure on." },
+  { name:"Energy Vampire",levels:3, effect:"Slows down an enemy city's energy regeneration.", tip:"Best timed right before they'd normally cash in a full energy bank." },
+  { name:"Energy Thief",  levels:2, effect:"Steals some of an enemy city's stored energy directly.", tip:"Use the moment you see them sitting on a near-full bank." },
+  { name:"Freeze",        levels:3, effect:"Freezes a city so it cannot launch any attacks.", tip:"Drop it on the enemy's best attacker right when they're loaded with energy." },
+  { name:"Umbrella",      levels:3, effect:"Makes the target city un-attackable for the duration — a temporary shield.", tip:"Save it to protect your best attacker (or yourself) from focus-fire." },
+  { name:"Dud",           levels:3, effect:"Halves the war points an enemy earns from hits against the target city.", tip:"Defensive — drop on your own city if you're about to get focus-fired." },
+];
+
+function renderBoosterRef(){
+  const container = document.getElementById('boosterRef');
+  container.innerHTML = '';
+  BOOSTERS.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'booster-card' + (b.name === 'Jackpot' ? ' highlight' : '');
+    card.innerHTML = `
+      <div class="bname">${b.name} <span class="blevels">Lv 1–${b.levels}</span></div>
+      <div class="beffect">${b.effect}</div>
+      <div class="btip">${b.tip}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function computeJackpotWindows(planCombo, cardList, energyBank, numJackpots){
+  const pool = Object.assign({}, planCombo);
+  const windows = [];
+  for (let w = 0; w < numJackpots; w++){
+    const burst = bestBurstFromPlan(pool, cardList, energyBank);
+    if (burst.pts === 0) break;
+    windows.push(burst);
+    Object.entries(burst.combo).forEach(([name, k]) => {
+      if (k) pool[name] = (pool[name] || 0) - k;
+    });
+  }
+  return windows;
+}
+
+function renderJackpotWindows(combo, energyBank){
+  const numJackpots = parseInt(document.getElementById('jackpotCount').value) || 0;
+  const container = document.getElementById('jackpotWindows');
+  container.innerHTML = '';
+  if (numJackpots <= 0){
+    container.innerHTML = '<div class="jp-empty">Enter how many Jackpot boosters you have to see the best window for each one.</div>';
+    return;
+  }
+  const windows = computeJackpotWindows(combo, cards, energyBank, numJackpots);
+  if (windows.length === 0){
+    container.innerHTML = '<div class="jp-empty">No attacks in your current plan fit inside one energy bank yet — add more depot items.</div>';
+    return;
+  }
+  windows.forEach((w, i) => {
+    const box = document.createElement('div');
+    box.className = 'jp-window';
+    const lines = Object.entries(w.combo)
+      .filter(([,k]) => k > 0)
+      .map(([name,k]) => {
+        const card = cards.find(c => c.name === name);
+        return `${name} ×${k} (${card.pts*k} pts)`;
+      }).join(', ');
+    let energyUsed = 0;
+    Object.entries(w.combo).forEach(([name,k]) => {
+      if (k){ const c = cards.find(cc => cc.name === name); energyUsed += c.energy * k; }
+    });
+    box.innerHTML = `
+      <div class="jhead">Jackpot window ${i+1}</div>
+      <div>${lines}</div>
+      <div class="jtotal">Base: ${w.pts.toLocaleString()} pts → <span class="x2">doubled under Jackpot: ${(w.pts*2).toLocaleString()} pts</span> · ${energyUsed} energy</div>
+    `;
+    container.appendChild(box);
+  });
+  if (windows.length < numJackpots){
+    const note = document.createElement('div');
+    note.className = 'jp-empty';
+    note.textContent = `Only ${windows.length} of ${numJackpots} windows found — your plan runs out of attacks that fit an energy bank beyond that.`;
+    container.appendChild(note);
+  }
+}
+
+document.getElementById('jackpotCount').addEventListener('input', recalc);
+
+// ---------- Fire an attack: deducts its item cost from the depot ----------
+function fireAttack(name){
+  const card = cards.find(c => c.name === name);
+  if (!card) return;
+  if (maxCastable(card, depot, Infinity) < 1) return; // safety check, shouldn't happen from the plan table
+  for (const item in card.items){
+    depot[item] = Math.max(0, (depot[item]||0) - card.items[item]);
+    const inp = document.getElementById('in-' + item);
+    if (inp) inp.value = depot[item];
+  }
+  recalc(); // numbers update live, order stays put until Sort is pressed
+}
+
+function recalc(){
+  // 1. Full optimal plan
+  const result = optimize(depot, cards);
+  const combo = result.combo;
+
+  // ranked by pts/energy
+  const rows = cards
+    .filter(c => (combo[c.name]||0) > 0)
+    .map(c => ({card:c, count: combo[c.name]}))
+    .sort((a,b) => (b.card.pts/b.card.energy) - (a.card.pts/a.card.energy));
+
+  const planBody = document.getElementById('planBody');
+  planBody.innerHTML = '';
+  let totalEnergy = 0, totalAttacks = 0;
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const totalPtsCard = r.card.pts * r.count;
+    const totalEnergyCard = r.card.energy * r.count;
+    totalEnergy += totalEnergyCard;
+    totalAttacks += r.count;
+    tr.innerHTML = `
+      <td>${r.card.name}${r.card.name==='Shield Buster' ? ' <span class="tag">strips shield</span>' : ''}</td>
+      <td class="num">${r.count}×</td>
+      <td class="num">${r.card.pts}</td>
+      <td class="num">${totalPtsCard}</td>
+      <td class="num">${r.card.energy}</td>
+      <td class="num">${totalEnergyCard}</td>
+      <td><button type="button" class="fire-btn" data-name="${r.card.name}">Fire ×1</button></td>
+    `;
+    planBody.appendChild(tr);
+  });
+
+  planBody.querySelectorAll('.fire-btn').forEach(btn => {
+    btn.addEventListener('click', () => fireAttack(btn.dataset.name));
+  });
+
+  document.getElementById('emptyPlanMsg').style.display = rows.length ? 'none' : 'block';
+  document.getElementById('totalPts').textContent = result.pts.toLocaleString();
+  document.getElementById('totalEnergy').textContent = totalEnergy.toLocaleString();
+  document.getElementById('totalAttacks').textContent = totalAttacks.toLocaleString();
+
+  // 2. Leftover items
+  const used = {}; ITEMS.forEach(i => used[i]=0);
+  Object.entries(combo).forEach(([name,count]) => {
+    if (!count) return;
+    const card = cards.find(c => c.name === name);
+    for (const item in card.items) used[item] += card.items[item]*count;
+  });
+  const leftover = {};
+  ITEMS.forEach(i => leftover[i] = (depot[i]||0) - used[i]);
+
+  // color-code depot rows
+  ITEMS.forEach(item => {
+    const row = document.getElementById('row-' + item);
+    if (!row) return;
+    row.classList.remove('full','spare');
+    if (depot[item] > 0 && leftover[item] === 0) row.classList.add('full');
+    else if (leftover[item] > 0) row.classList.add('spare');
+  });
+
+  // give-away callout: generous threshold = at least 2 spare, or fully unused item with stock >0
+  const giveList = document.getElementById('giveList');
+  const tightList = [];
+  giveList.innerHTML = '';
+  let anyLeftover = false;
+  ITEMS.forEach(item => {
+    if (leftover[item] > 0){
+      anyLeftover = true;
+      const chip = document.createElement('div');
+      const isGenerous = leftover[item] >= 2;
+      chip.className = 'give-chip' + (isGenerous ? '' : ' tight');
+      chip.textContent = `${ITEM_LABELS[item]} ×${leftover[item]}`;
+      giveList.appendChild(chip);
+    }
+  });
+  document.getElementById('giveCallout').style.display = anyLeftover ? 'block' : 'none';
+
+  // bottleneck callout: items at 0 stock that at least one card needs
+  const zeroBlockers = ITEMS.filter(item => (depot[item]||0) === 0 &&
+    cards.some(c => c.items[item] !== undefined));
+  const blockedCards = zeroBlockers.length
+    ? cards.filter(c => zeroBlockers.some(z => c.items[z] !== undefined)).map(c => c.name)
+    : [];
+  const bottleneckCallout = document.getElementById('bottleneckCallout');
+  if (zeroBlockers.length){
+    bottleneckCallout.style.display = 'block';
+    document.getElementById('bottleneckText').textContent =
+      `${zeroBlockers.map(z => ITEM_LABELS[z]).join(', ')} at zero — locking out: ${[...new Set(blockedCards)].join(', ')}.`;
+  } else {
+    bottleneckCallout.style.display = 'none';
+  }
+
+  // 3. Safest attack to fire right now (zero opportunity cost, highest points)
+  const safestCallout = document.getElementById('safestCallout');
+  const castableNow = cards.filter(c => maxCastable(c, depot, Infinity) >= 1);
+  if (castableNow.length === 0 || result.pts === 0){
+    safestCallout.style.display = 'none';
+  } else {
+    let bestChoice = null, bestOppCost = Infinity;
+    castableNow.forEach(c => {
+      const nd = Object.assign({}, depot);
+      for (const item in c.items) nd[item] -= c.items[item];
+      const remainOpt = optimize(nd, cards).pts;
+      const total = c.pts + remainOpt;
+      const oppCost = result.pts - total;
+      if (oppCost < bestOppCost || (oppCost === bestOppCost && (!bestChoice || c.pts > bestChoice.pts))){
+        bestOppCost = oppCost;
+        bestChoice = c;
+      }
+    });
+    safestCallout.style.display = 'block';
+    if (bestOppCost <= 0){
+      document.getElementById('safestText').textContent =
+        `Fire ${bestChoice.name} (${bestChoice.pts} pts) — it's already part of your optimal plan, so firing it now costs you nothing later.`;
+    } else {
+      document.getElementById('safestText').textContent =
+        `Fire ${bestChoice.name} (${bestChoice.pts} pts) — costs about ${bestOppCost} pts of future flexibility, the lowest of any castable option right now.`;
+    }
+  }
+
+  // 4. Energy burst
+  const energyBank = parseInt(document.getElementById('energyBank').value) || 12;
+  const burst = bestBurstFromPlan(combo, cards, energyBank);
+  const burstBody = document.getElementById('burstBody');
+  burstBody.innerHTML = '';
+  let burstEnergyTotal = 0;
+  cards.forEach(c => {
+    const k = burst.combo[c.name];
+    if (k > 0){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${c.name}</td><td class="num">${k}×</td><td class="num">${c.pts*k}</td><td class="num">${c.energy*k}</td>`;
+      burstBody.appendChild(tr);
+      burstEnergyTotal += c.energy*k;
+    }
+  });
+  document.getElementById('burstPts').textContent = burst.pts.toLocaleString();
+  document.getElementById('burstEnergy').textContent = burstEnergyTotal.toLocaleString();
+
+  // 5. Jackpot windows
+  renderJackpotWindows(combo, energyBank);
+
+  // 6. Persist everything for next time you open this file
+  saveState();
+}
+
+document.getElementById('energyBank').addEventListener('input', recalc);
+document.getElementById('resetBtn').addEventListener('click', resetAllData);
+
+loadState();
+renderItemRows();
+buildCardEditor();
+renderBoosterRef();
+recalc();
+</script>
+</body>
+</html>
