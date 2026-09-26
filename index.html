@@ -197,6 +197,48 @@
   }
   td.num, th.num{ text-align: right; font-variant-numeric: tabular-nums; }
   tr.jackpot td{ background: rgba(244,183,49,0.08); }
+
+  .narrow-cards{ display: none; }
+  .plan-card{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .plan-card .pc-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .plan-card .pc-name{
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .plan-card .pc-casts{
+    color: var(--energy);
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    white-space: nowrap;
+  }
+  .plan-card .pc-stats{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .plan-card .pc-stats strong{ color: var(--text); font-weight: 600; }
+  .plan-card .fire-btn{ width: 100%; padding: 8px 10px; font-size: 13px; }
+
+  @media (max-width: 640px){
+    .wide-table{ display: none; }
+    .narrow-cards{ display: block; }
+  }
   .tag{
     font-size: 10px;
     padding: 2px 6px;
@@ -580,7 +622,7 @@
       <div class="panel">
         <h2>Optimal Attack Plan</h2>
         <div class="desc">Sorted by points-per-energy — fire from the top down if you might get interrupted. This is an exhaustive search, not a heuristic: it is mathematically the best possible use of your current depot. Hit "Fire" after each cast and your depot updates automatically.</div>
-        <table>
+        <table class="wide-table">
           <colgroup>
             <col style="width:22%"><col style="width:9%"><col style="width:12%">
             <col style="width:13%"><col style="width:12%"><col style="width:13%"><col style="width:19%">
@@ -590,6 +632,7 @@
           </thead>
           <tbody id="planBody"></tbody>
         </table>
+        <div class="narrow-cards" id="planCards"></div>
         <div id="emptyPlanMsg" style="display:none; color: var(--muted); padding: 14px 0; font-size: 13px;">No attacks are castable with your current depot yet — add some items on the left.</div>
       </div>
 
@@ -620,13 +663,14 @@
       <input type="number" id="energyBank" value="12" min="1">
       <span style="color:var(--muted); font-size:12px;">Space Rock Rumble and most late arenas cap at 12 — change if yours differs.</span>
     </div>
-    <table>
+    <table class="wide-table">
       <colgroup>
         <col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%">
       </colgroup>
       <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts</th><th class="num">Energy</th></tr></thead>
       <tbody id="burstBody"></tbody>
     </table>
+    <div class="narrow-cards" id="burstCards"></div>
     <div style="margin-top:8px; font-size:13px;">Burst total: <strong id="burstPts">0</strong> points using <strong id="burstEnergy">0</strong> energy</div>
   </details>
 
@@ -1089,7 +1133,9 @@ function recalc(){
     .sort((a,b) => (b.card.pts/b.card.energy) - (a.card.pts/a.card.energy));
 
   const planBody = document.getElementById('planBody');
+  const planCards = document.getElementById('planCards');
   planBody.innerHTML = '';
+  planCards.innerHTML = '';
   let totalEnergy = 0, totalAttacks = 0;
   rows.forEach(r => {
     const tr = document.createElement('tr');
@@ -1097,8 +1143,9 @@ function recalc(){
     const totalEnergyCard = r.card.energy * r.count;
     totalEnergy += totalEnergyCard;
     totalAttacks += r.count;
+    const shieldTag = r.card.name==='Shield Buster' ? ' <span class="tag">strips shield</span>' : '';
     tr.innerHTML = `
-      <td>${r.card.name}${r.card.name==='Shield Buster' ? ' <span class="tag">strips shield</span>' : ''}</td>
+      <td>${r.card.name}${shieldTag}</td>
       <td class="num">${r.count}×</td>
       <td class="num">${r.card.pts}</td>
       <td class="num">${totalPtsCard}</td>
@@ -1107,9 +1154,29 @@ function recalc(){
       <td><button type="button" class="fire-btn" data-name="${r.card.name}">Fire ×1</button></td>
     `;
     planBody.appendChild(tr);
+
+    const card = document.createElement('div');
+    card.className = 'plan-card';
+    card.innerHTML = `
+      <div class="pc-head">
+        <div class="pc-name">${r.card.name}${shieldTag}</div>
+        <div class="pc-casts">${r.count}× cast</div>
+      </div>
+      <div class="pc-stats">
+        <div>Pts/cast: <strong>${r.card.pts}</strong></div>
+        <div>Total pts: <strong>${totalPtsCard}</strong></div>
+        <div>Energy/cast: <strong>${r.card.energy}</strong></div>
+        <div>Total energy: <strong>${totalEnergyCard}</strong></div>
+      </div>
+      <button type="button" class="fire-btn" data-name="${r.card.name}">Fire ×1</button>
+    `;
+    planCards.appendChild(card);
   });
 
   planBody.querySelectorAll('.fire-btn').forEach(btn => {
+    btn.addEventListener('click', () => fireAttack(btn.dataset.name));
+  });
+  planCards.querySelectorAll('.fire-btn').forEach(btn => {
     btn.addEventListener('click', () => fireAttack(btn.dataset.name));
   });
 
@@ -1201,7 +1268,9 @@ function recalc(){
   const energyBank = parseInt(document.getElementById('energyBank').value) || 12;
   const burst = bestBurstFromPlan(combo, cards, energyBank);
   const burstBody = document.getElementById('burstBody');
+  const burstCards = document.getElementById('burstCards');
   burstBody.innerHTML = '';
+  burstCards.innerHTML = '';
   let burstEnergyTotal = 0;
   cards.forEach(c => {
     const k = burst.combo[c.name];
@@ -1209,6 +1278,20 @@ function recalc(){
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${c.name}</td><td class="num">${k}×</td><td class="num">${c.pts*k}</td><td class="num">${c.energy*k}</td>`;
       burstBody.appendChild(tr);
+
+      const card = document.createElement('div');
+      card.className = 'plan-card';
+      card.innerHTML = `
+        <div class="pc-head">
+          <div class="pc-name">${c.name}</div>
+          <div class="pc-casts">${k}× cast</div>
+        </div>
+        <div class="pc-stats">
+          <div>Points: <strong>${c.pts*k}</strong></div>
+          <div>Energy: <strong>${c.energy*k}</strong></div>
+        </div>
+      `;
+      burstCards.appendChild(card);
       burstEnergyTotal += c.energy*k;
     }
   });
