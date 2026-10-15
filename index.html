@@ -284,6 +284,12 @@
   .callout.warn .head{ color: var(--bottleneck); }
   .callout.info{ border-left-color: var(--energy); }
   .callout.info .head{ color: var(--energy); }
+  .callout.chase{ border-left-color: var(--points); }
+  .callout.chase .head{ color: var(--points); }
+  .chase-table{ margin-top: 10px; }
+  .chase-table td.gain{ color: var(--points); font-weight: 600; }
+  .chase-table td.none{ color: var(--muted); }
+  .chase-note{ margin-top: 8px; font-size: 11.5px; color: var(--muted); }
 
   .give-list{
     display: flex;
@@ -650,6 +656,17 @@
       <div class="callout warn" id="bottleneckCallout" style="display:none;">
         <div class="head">Bottleneck items</div>
         <div id="bottleneckText"></div>
+      </div>
+
+      <div class="callout chase" id="chasePanel" style="display:none;">
+        <div class="head">Best items to chase</div>
+        <div id="chaseVerdict"></div>
+        <table class="chase-table" id="chaseTable" style="display:none;">
+          <colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup>
+          <thead><tr><th>Item</th><th class="num">+1</th><th class="num">+3</th></tr></thead>
+          <tbody id="chaseBody"></tbody>
+        </table>
+        <div class="chase-note" id="chaseNote"></div>
       </div>
     </div>
 
@@ -1121,6 +1138,66 @@ function fireAttack(name){
   recalc(); // numbers update live, order stays put until Sort is pressed
 }
 
+// ---------- Best items to chase: marginal value of +1 / +3 of each item ----------
+function rankChase(startDepot, cardList, baselinePts){
+  const rows = [];
+  ITEMS.forEach(item => {
+    if (!cardList.some(c => c.items[item] !== undefined)) return; // no card uses this item
+    const d1 = Object.assign({}, startDepot); d1[item] = (d1[item]||0) + 1;
+    const d3 = Object.assign({}, startDepot); d3[item] = (d3[item]||0) + 3;
+    const g1 = optimize(d1, cardList).pts - baselinePts;
+    const g3 = optimize(d3, cardList).pts - baselinePts;
+    rows.push({ item, g1, g3, score: Math.max(g1, g3 / 3) }); // rank by points per unit gained
+  });
+  rows.sort((a, b) => (b.score - a.score) || (b.g3 - a.g3));
+  return rows;
+}
+
+let chaseTimer = null;
+let lastBaseline = 0;
+
+function scheduleChase(){
+  const panel = document.getElementById('chasePanel');
+  clearTimeout(chaseTimer);
+  const totalStock = ITEMS.reduce((s, i) => s + (depot[i] || 0), 0);
+  if (totalStock === 0){ panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  document.getElementById('chaseVerdict').textContent = 'Crunching the numbers…';
+  document.getElementById('chaseTable').style.display = 'none';
+  document.getElementById('chaseNote').textContent = '';
+  chaseTimer = setTimeout(renderChase, 400); // wait until you stop typing/tapping
+}
+
+function renderChase(){
+  const rows = rankChase(depot, cards, lastBaseline).filter(r => r.g3 > 0).slice(0, 6);
+  const verdict = document.getElementById('chaseVerdict');
+  const table = document.getElementById('chaseTable');
+  const body = document.getElementById('chaseBody');
+  const note = document.getElementById('chaseNote');
+  body.innerHTML = '';
+
+  if (rows.length === 0){
+    verdict.textContent = 'No single item moves the needle right now — your depot is balanced for these cards. Check the Bottleneck panel for anything sitting at zero.';
+    table.style.display = 'none';
+    note.textContent = '';
+    return;
+  }
+
+  const top = rows[0];
+  verdict.textContent = top.g1 > 0
+    ? `Chase ${ITEM_LABELS[top.item]} first — even +1 adds ${top.g1} pts, and +3 adds ${top.g3}.`
+    : `Chase ${ITEM_LABELS[top.item]} first — +1 alone adds nothing, but +3 adds ${top.g3} pts.`;
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const fmt = g => g > 0 ? `<td class="num gain">+${g}</td>` : `<td class="num none">—</td>`;
+    tr.innerHTML = `<td>${ITEM_LABELS[r.item]}</td>${fmt(r.g1)}${fmt(r.g3)}`;
+    body.appendChild(tr);
+  });
+  table.style.display = 'table';
+  note.textContent = 'Extra war points your optimal plan would earn if you gained that many more of just that one item. A "—" under +1 with a gain under +3 means you need a few of it before it pays off. Uses your current card stats.';
+}
+
 function recalc(){
   // 1. Full optimal plan
   const result = optimize(depot, cards);
@@ -1301,7 +1378,11 @@ function recalc(){
   // 5. Jackpot windows
   renderJackpotWindows(combo, energyBank);
 
-  // 6. Persist everything for next time you open this file
+  // 6. Best items to chase (debounced — runs once you stop editing)
+  lastBaseline = result.pts;
+  scheduleChase();
+
+  // 7. Persist everything for next time you open this file
   saveState();
 }
 
