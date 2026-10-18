@@ -89,6 +89,7 @@
   .stat.points .n{ color: var(--points); }
   .stat.energy .n{ color: var(--energy); }
   .stat.attacks .n{ color: var(--text); }
+  .stat.damage .n{ color: var(--damage); }
 
   .grid{
     display: grid;
@@ -235,7 +236,9 @@
   .plan-card .pc-stats strong{ color: var(--text); font-weight: 600; }
   .plan-card .fire-btn{ width: 100%; padding: 8px 10px; font-size: 13px; }
 
-  @media (max-width: 640px){
+  /* Card layout whenever the results column is too narrow for a 9-column table:
+     phones, and the two-column desktop layout between 861px and 1000px wide. */
+  @media (max-width: 640px), (min-width: 861px) and (max-width: 1000px){
     .wide-table{ display: none; }
     .narrow-cards{ display: block; }
   }
@@ -332,7 +335,7 @@
   }
   .card-row{
     display: grid;
-    grid-template-columns: 130px 1fr 70px 70px 26px;
+    grid-template-columns: 130px 1fr 70px 70px 70px 26px;
     gap: 8px;
     align-items: center;
     font-size: 12px;
@@ -396,13 +399,39 @@
   }
   .card-editor-head{
     display: grid;
-    grid-template-columns: 130px 1fr 70px 70px 26px;
+    grid-template-columns: 130px 1fr 70px 70px 70px 26px;
     gap: 8px;
     font-size: 10.5px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 4px;
+  }
+  .card-row label.mini{ display: block; min-width: 0; }
+  .card-row label.mini span{ display: none; }
+
+  /* Phones: stack each card's editor so nothing gets squeezed, and label the number boxes */
+  @media (max-width: 640px){
+    .card-editor-head{ display: none; }
+    .card-editor{ gap: 14px; }
+    .card-row{
+      grid-template-columns: 1fr 1fr 1fr 34px;
+      gap: 8px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-row:last-child{ border-bottom: none; padding-bottom: 0; }
+    .card-row input.name-input,
+    .card-row .recipe-btn{ grid-column: 1 / -1; }
+    .card-row label.mini span{
+      display: block;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+    .card-row .del-btn{ align-self: end; width: 34px; height: 30px; }
   }
 
   .burst-box{
@@ -610,6 +639,7 @@
       <div class="stat points"><div class="n" id="totalPts">0</div><div class="l">War Points</div></div>
       <div class="stat energy"><div class="n" id="totalEnergy">0</div><div class="l">Energy Used</div></div>
       <div class="stat attacks"><div class="n" id="totalAttacks">0</div><div class="l">Attacks</div></div>
+      <div class="stat damage"><div class="n" id="totalDamage">0</div><div class="l">Damage</div></div>
     </div>
   </header>
 
@@ -630,11 +660,11 @@
         <div class="desc">Sorted by points-per-energy — fire from the top down if you might get interrupted. This is an exhaustive search, not a heuristic: it is mathematically the best possible use of your current depot. Hit "Fire" after each cast and your depot updates automatically.</div>
         <table class="wide-table">
           <colgroup>
-            <col style="width:22%"><col style="width:9%"><col style="width:12%">
-            <col style="width:13%"><col style="width:12%"><col style="width:13%"><col style="width:19%">
+            <col style="width:18%"><col style="width:8%"><col style="width:10%"><col style="width:11%">
+            <col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:11%"><col style="width:13%">
           </colgroup>
           <thead>
-            <tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts/Cast</th><th class="num">Total Pts</th><th class="num">Energy/Cast</th><th class="num">Total Energy</th><th></th></tr>
+            <tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts / Cast</th><th class="num">Total Pts</th><th class="num">Dmg / Cast</th><th class="num">Total Dmg</th><th class="num">Energy / Cast</th><th class="num">Total Energy</th><th></th></tr>
           </thead>
           <tbody id="planBody"></tbody>
         </table>
@@ -682,20 +712,20 @@
     </div>
     <table class="wide-table">
       <colgroup>
-        <col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%">
+        <col style="width:34%"><col style="width:16%"><col style="width:16%"><col style="width:17%"><col style="width:17%">
       </colgroup>
-      <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts</th><th class="num">Energy</th></tr></thead>
+      <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts</th><th class="num">Dmg</th><th class="num">Energy</th></tr></thead>
       <tbody id="burstBody"></tbody>
     </table>
     <div class="narrow-cards" id="burstCards"></div>
-    <div style="margin-top:8px; font-size:13px;">Burst total: <strong id="burstPts">0</strong> points using <strong id="burstEnergy">0</strong> energy</div>
+    <div style="margin-top:8px; font-size:13px;">Burst total: <strong id="burstPts">0</strong> points, <strong id="burstDmg">0</strong> damage, using <strong id="burstEnergy">0</strong> energy</div>
   </details>
 
   <details>
     <summary>Disaster card settings</summary>
-    <div class="desc" style="margin-top:8px;">Update points, energy cost, or item recipe whenever a card levels up, or add a card you've newly unlocked. Item recipe format: <code>Item:qty, Item:qty</code> — use the exact item names shown in the Depot panel.</div>
+    <div class="desc" style="margin-top:8px;">Update points, damage, energy cost, or items needed whenever a card levels up, or add a card you've newly unlocked. Damage is the amount a cast takes off the enemy city's health, as shown on the card in-game. Tap "Items needed" to set the recipe.</div>
     <div class="card-editor-head">
-      <div>Card</div><div>Items needed</div><div>Points</div><div>Energy</div><div></div>
+      <div>Card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
     </div>
     <div class="card-editor" id="cardEditor"></div>
     <button type="button" class="add-card-btn" id="addCardBtn">+ Add new disaster</button>
@@ -743,24 +773,24 @@ const ITEM_LABELS = {
 };
 
 const DEFAULT_CARDS = [
-  {name:"Comic Hand",      items:{Plunger:1,Duck:1},                     pts:110,  energy:1},
-  {name:"Shrink Ray",      items:{Pliers:1,Megaphone:2},                 pts:300,  energy:3},
-  {name:"Not in Kansas",   items:{Anvil:1,Propeller:1},                  pts:300,  energy:4},
-  {name:"Magnetism",       items:{Binoculars:1,FireHydrant:2,Anvil:2},   pts:365,  energy:2},
-  {name:"Tentacle Vortex", items:{Plunger:1,Duck:1,Propeller:2},         pts:220,  energy:3},
-  {name:"Disco Twister",   items:{Megaphone:1,Pliers:1,Propeller:2},     pts:600,  energy:6},
-  {name:"Blizzaster",      items:{Propeller:1,Ammo:2,Duck:3},            pts:725,  energy:6},
-  {name:"Hands of Doom",   items:{Ammo:2,Duck:2,Pliers:5},               pts:800,  energy:8},
-  {name:"16 Tons",         items:{Pliers:1,FireHydrant:2,Anvil:4},       pts:600,  energy:6},
-  {name:"Spiders",         items:{Gasoline:1,Binoculars:2,Ammo:5},       pts:990,  energy:9},
-  {name:"Building Portal", items:{FireHydrant:3,Plunger:3,Propeller:4}, pts:880,  energy:7},
-  {name:"B Movie Monster", items:{RubberBoots:2,Plunger:2,Megaphone:2},  pts:1000, energy:8},
-  {name:"Mellow Bellow",   items:{Megaphone:4,Pliers:3,Propeller:4},     pts:1330, energy:8},
-  {name:"Shield Buster",   items:{Gasoline:5,Medkit:1},                  pts:700,  energy:7},
+  {name:"Comic Hand",      items:{Plunger:1,Duck:1},                     pts:110,  energy:1, dmg:1},
+  {name:"Shrink Ray",      items:{Pliers:1,Megaphone:2},                 pts:300,  energy:3, dmg:3},
+  {name:"Not in Kansas",   items:{Anvil:1,Propeller:1},                  pts:300,  energy:4, dmg:3},
+  {name:"Magnetism",       items:{Binoculars:1,FireHydrant:2,Anvil:2},   pts:365,  energy:2, dmg:3},
+  {name:"Tentacle Vortex", items:{Plunger:1,Duck:1,Propeller:2},         pts:220,  energy:3, dmg:2},
+  {name:"Disco Twister",   items:{Megaphone:1,Pliers:1,Propeller:2},     pts:600,  energy:6, dmg:6},
+  {name:"Blizzaster",      items:{Propeller:1,Ammo:2,Duck:3},            pts:725,  energy:6, dmg:6},
+  {name:"Hands of Doom",   items:{Ammo:2,Duck:2,Pliers:5},               pts:800,  energy:8, dmg:8},
+  {name:"16 Tons",         items:{Pliers:1,FireHydrant:2,Anvil:4},       pts:600,  energy:6, dmg:6},
+  {name:"Spiders",         items:{Gasoline:1,Binoculars:2,Ammo:5},       pts:990,  energy:9, dmg:9},
+  {name:"Building Portal", items:{FireHydrant:3,Plunger:3,Propeller:4}, pts:880,  energy:7, dmg:8},
+  {name:"B Movie Monster", items:{RubberBoots:2,Plunger:2,Megaphone:2},  pts:1000, energy:8, dmg:10},
+  {name:"Mellow Bellow",   items:{Megaphone:4,Pliers:3,Propeller:4},     pts:1330, energy:8, dmg:11},
+  {name:"Shield Buster",   items:{Gasoline:5,Medkit:1},                  pts:700,  energy:7, dmg:0},
 ];
 
 function cloneDefaultCards(){
-  return DEFAULT_CARDS.map(c => ({ name:c.name, items:Object.assign({}, c.items), pts:c.pts, energy:c.energy }));
+  return DEFAULT_CARDS.map(c => ({ name:c.name, items:Object.assign({}, c.items), pts:c.pts, energy:c.energy, dmg:c.dmg }));
 }
 
 let cards = cloneDefaultCards();
@@ -792,6 +822,14 @@ function loadState(){
     const state = JSON.parse(raw);
     if (state.cards && Array.isArray(state.cards) && state.cards.length){
       cards = state.cards;
+      // Older saves have no damage value: fill it in from the defaults (matched by name), else 0.
+      // Points, energy and recipes you already saved are never touched.
+      cards.forEach(c => {
+        if (typeof c.dmg !== 'number' || isNaN(c.dmg)){
+          const def = DEFAULT_CARDS.find(d => d.name === c.name);
+          c.dmg = def ? def.dmg : 0;
+        }
+      });
     }
     if (state.depot){
       ITEMS.forEach(i => { depot[i] = parseInt(state.depot[i]) || 0; });
@@ -949,8 +987,9 @@ function buildCardEditor(){
     row.innerHTML = `
       <input class="name-input" data-idx="${idx}" data-field="name" value="${card.name}">
       <button type="button" class="recipe-btn${entries.length?'':' empty'}" data-idx="${idx}" title="${summary}">${summary}</button>
-      <input class="small" data-idx="${idx}" data-field="pts" value="${card.pts}">
-      <input class="small" data-idx="${idx}" data-field="energy" value="${card.energy}">
+      <label class="mini"><span>Points</span><input class="small" data-idx="${idx}" data-field="pts" value="${card.pts}"></label>
+      <label class="mini"><span>Damage</span><input class="small" data-idx="${idx}" data-field="dmg" value="${card.dmg||0}"></label>
+      <label class="mini"><span>Energy</span><input class="small" data-idx="${idx}" data-field="energy" value="${card.energy}"></label>
       <button type="button" class="del-btn" data-idx="${idx}" title="Remove this card">×</button>
     `;
     container.appendChild(row);
@@ -960,7 +999,7 @@ function buildCardEditor(){
     inp.addEventListener('change', () => {
       const idx = parseInt(inp.dataset.idx);
       const field = inp.dataset.field;
-      if (field === 'pts' || field === 'energy'){
+      if (field === 'pts' || field === 'energy' || field === 'dmg'){
         const v = parseFloat(inp.value);
         if (!isNaN(v) && v >= 0) cards[idx][field] = v;
       } else if (field === 'name'){
@@ -992,7 +1031,7 @@ document.getElementById('addCardBtn').addEventListener('click', () => {
     n += 1;
     name = `New Disaster ${n}`;
   }
-  cards.push({ name, items:{}, pts:100, energy:1 });
+  cards.push({ name, items:{}, pts:100, energy:1, dmg:0 });
   buildCardEditor();
   recalc();
 });
@@ -1104,14 +1143,14 @@ function renderJackpotWindows(combo, energyBank){
         const card = cards.find(c => c.name === name);
         return `${name} ×${k} (${card.pts*k} pts)`;
       }).join(', ');
-    let energyUsed = 0;
+    let energyUsed = 0, dmgUsed = 0;
     Object.entries(w.combo).forEach(([name,k]) => {
-      if (k){ const c = cards.find(cc => cc.name === name); energyUsed += c.energy * k; }
+      if (k){ const c = cards.find(cc => cc.name === name); energyUsed += c.energy * k; dmgUsed += (c.dmg || 0) * k; }
     });
     box.innerHTML = `
       <div class="jhead">Jackpot window ${i+1}</div>
       <div>${lines}</div>
-      <div class="jtotal">Base: ${w.pts.toLocaleString()} pts → <span class="x2">doubled under Jackpot: ${(w.pts*2).toLocaleString()} pts</span> · ${energyUsed} energy</div>
+      <div class="jtotal">Base: ${w.pts.toLocaleString()} pts → <span class="x2">doubled under Jackpot: ${(w.pts*2).toLocaleString()} pts</span> · ${dmgUsed} damage · ${energyUsed} energy</div>
     `;
     container.appendChild(box);
   });
@@ -1213,19 +1252,25 @@ function recalc(){
   const planCards = document.getElementById('planCards');
   planBody.innerHTML = '';
   planCards.innerHTML = '';
-  let totalEnergy = 0, totalAttacks = 0;
+  let totalEnergy = 0, totalAttacks = 0, totalDamage = 0;
+  const showDmg = d => d > 0 ? d.toLocaleString() : '—'; // cards that deal no damage (e.g. Shield Buster) show a dash
   rows.forEach(r => {
     const tr = document.createElement('tr');
+    const dmgEach = r.card.dmg || 0;
     const totalPtsCard = r.card.pts * r.count;
     const totalEnergyCard = r.card.energy * r.count;
+    const totalDmgCard = dmgEach * r.count;
     totalEnergy += totalEnergyCard;
     totalAttacks += r.count;
+    totalDamage += totalDmgCard;
     const shieldTag = r.card.name==='Shield Buster' ? ' <span class="tag">strips shield</span>' : '';
     tr.innerHTML = `
       <td>${r.card.name}${shieldTag}</td>
       <td class="num">${r.count}×</td>
       <td class="num">${r.card.pts}</td>
       <td class="num">${totalPtsCard}</td>
+      <td class="num">${showDmg(dmgEach)}</td>
+      <td class="num">${showDmg(totalDmgCard)}</td>
       <td class="num">${r.card.energy}</td>
       <td class="num">${totalEnergyCard}</td>
       <td><button type="button" class="fire-btn" data-name="${r.card.name}">Fire ×1</button></td>
@@ -1242,6 +1287,8 @@ function recalc(){
       <div class="pc-stats">
         <div>Pts/cast: <strong>${r.card.pts}</strong></div>
         <div>Total pts: <strong>${totalPtsCard}</strong></div>
+        <div>Dmg/cast: <strong>${showDmg(dmgEach)}</strong></div>
+        <div>Total dmg: <strong>${showDmg(totalDmgCard)}</strong></div>
         <div>Energy/cast: <strong>${r.card.energy}</strong></div>
         <div>Total energy: <strong>${totalEnergyCard}</strong></div>
       </div>
@@ -1261,6 +1308,7 @@ function recalc(){
   document.getElementById('totalPts').textContent = result.pts.toLocaleString();
   document.getElementById('totalEnergy').textContent = totalEnergy.toLocaleString();
   document.getElementById('totalAttacks').textContent = totalAttacks.toLocaleString();
+  document.getElementById('totalDamage').textContent = totalDamage.toLocaleString();
 
   // 2. Leftover items
   const used = {}; ITEMS.forEach(i => used[i]=0);
@@ -1348,12 +1396,13 @@ function recalc(){
   const burstCards = document.getElementById('burstCards');
   burstBody.innerHTML = '';
   burstCards.innerHTML = '';
-  let burstEnergyTotal = 0;
+  let burstEnergyTotal = 0, burstDmgTotal = 0;
   cards.forEach(c => {
     const k = burst.combo[c.name];
     if (k > 0){
+      const dmgBurst = (c.dmg || 0) * k;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${c.name}</td><td class="num">${k}×</td><td class="num">${c.pts*k}</td><td class="num">${c.energy*k}</td>`;
+      tr.innerHTML = `<td>${c.name}</td><td class="num">${k}×</td><td class="num">${c.pts*k}</td><td class="num">${showDmg(dmgBurst)}</td><td class="num">${c.energy*k}</td>`;
       burstBody.appendChild(tr);
 
       const card = document.createElement('div');
@@ -1365,14 +1414,17 @@ function recalc(){
         </div>
         <div class="pc-stats">
           <div>Points: <strong>${c.pts*k}</strong></div>
+          <div>Damage: <strong>${showDmg(dmgBurst)}</strong></div>
           <div>Energy: <strong>${c.energy*k}</strong></div>
         </div>
       `;
       burstCards.appendChild(card);
       burstEnergyTotal += c.energy*k;
+      burstDmgTotal += dmgBurst;
     }
   });
   document.getElementById('burstPts').textContent = burst.pts.toLocaleString();
+  document.getElementById('burstDmg').textContent = burstDmgTotal.toLocaleString();
   document.getElementById('burstEnergy').textContent = burstEnergyTotal.toLocaleString();
 
   // 5. Jackpot windows
