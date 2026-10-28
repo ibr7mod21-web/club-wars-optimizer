@@ -625,6 +625,54 @@
   }
   .card-row .recipe-btn:hover{ border-color: var(--energy); }
   .card-row .recipe-btn.empty{ color: var(--muted); font-style: italic; }
+
+  /* About line + first-run setup */
+  .about{ margin-top: 4px; line-height: 1.7; }
+  .about .city{ color: var(--text); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; }
+  .code-btn{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    user-select: all;
+    -webkit-user-select: all;
+  }
+  .code-btn:hover{ border-color: var(--energy); }
+  .footer-links{ margin-top: 10px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .fine{ margin-top: 8px; font-size: 10.5px; opacity: .8; }
+
+  .setup-box{ max-width: 520px; }
+  .setup-bank{
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--panel-raised); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px;
+  }
+  .setup-row{
+    border: 1px solid var(--border);
+    background: var(--panel-raised);
+    border-radius: 8px;
+    padding: 9px 12px 10px;
+    margin-bottom: 8px;
+  }
+  .setup-row .sname{ font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+  .setup-row .sfields{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .setup-row label{ display: block; font-size: 10.5px; color: var(--muted); }
+  .setup-row input, .setup-bank input{
+    display: block; width: 100%; margin-top: 2px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 4px; text-align: center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+  }
+  .setup-bank input{ width: 64px; margin-top: 0; }
+  .setup-link{
+    background: none; border: none; color: var(--energy); text-decoration: underline;
+    cursor: pointer; font-family: inherit; font-size: inherit; padding: 0;
+  }
 </style>
 </head>
 <body>
@@ -724,6 +772,7 @@
   <details>
     <summary>Disaster card settings</summary>
     <div class="desc" style="margin-top:8px;">Update points, damage, energy cost, or items needed whenever a card levels up, or add a card you've newly unlocked. Damage is the amount a cast takes off the enemy city's health, as shown on the card in-game. Tap "Items needed" to set the recipe.</div>
+    <div style="margin:10px 0 4px;"><button type="button" class="setup-link" id="openSetupBtn">Run the quick card setup</button> <span style="color:var(--muted); font-size:12px;">(all your cards on one screen)</span></div>
     <div class="card-editor-head">
       <div>Card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
     </div>
@@ -746,9 +795,29 @@
   </details>
 
   <footer>
-    Built for Club Wars — Space Rock Rumble era. Your depot and disaster settings are saved automatically on this device — closing and reopening this file will remember them.
-    <div style="margin-top:8px;"><button type="button" class="reset-link" id="resetBtn">Reset everything to defaults</button></div>
+    <div class="about">
+      <span class="city">Brrville</span> &middot; Friend code <button type="button" class="code-btn" id="friendCodeBtn" title="Tap to copy">PJ3S8B</button>
+    </div>
+    <div>Your depot and card settings are saved on this device only.</div>
+    <div class="footer-links">
+      <button type="button" class="reset-link" id="footerSetupBtn">Card setup</button>
+      <button type="button" class="reset-link" id="resetBtn">Reset everything to defaults</button>
+    </div>
+    <div class="fine">Unofficial fan tool for SimCity BuildIt. Not affiliated with or endorsed by EA or Maxis.</div>
   </footer>
+</div>
+
+<div class="modal-overlay" id="setupModal">
+  <div class="modal-box setup-box">
+    <h3>Set up your cards</h3>
+    <div class="desc">The numbers below are one player's card levels. Yours are probably different, and the plan is only as good as these. Check each card in-game and enter the points, damage and energy it shows. Item recipes don't change with level. You can change all of this later in Disaster card settings.</div>
+    <div class="setup-bank"><span>Energy bank size (your arena's limit)</span><input type="text" inputmode="numeric" id="setupBank"></div>
+    <div id="setupRows"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="setupSkipBtn">Skip for now</button>
+      <button type="button" class="btn-save" id="setupSaveBtn">Save and start</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="recipeModal">
@@ -801,9 +870,13 @@ ITEMS.forEach(i => depot[i] = 0);
 // ---------- Save / load (browser local storage — this file runs on your own device, nothing leaves it) ----------
 const STORAGE_KEY = 'clubWarsOptimizerState_v1';
 
+// Brand-new visitors see the card setup screen once. Anyone with an older save skips it.
+let setupDone = false;
+
 function saveState(){
   try{
     const state = {
+      setupDone: setupDone,
       cards: cards,
       depot: depot,
       energyBank: document.getElementById('energyBank').value,
@@ -820,6 +893,8 @@ function loadState(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const state = JSON.parse(raw);
+    // Saves from before this feature have no flag, so they count as set up. A saved "false" means setup wasn't finished.
+    setupDone = state.setupDone !== false;
     if (state.cards && Array.isArray(state.cards) && state.cards.length){
       cards = state.cards;
       // Older saves have no damage value: fill it in from the defaults (matched by name), else 0.
@@ -845,6 +920,7 @@ function resetAllData(){
   const ok = confirm('This clears every saved disaster setting and depot number on this device, back to factory defaults. This cannot be undone. Continue?');
   if (!ok) return;
   try{ localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  setupDone = false;
   cards = cloneDefaultCards();
   ITEMS.forEach(i => depot[i] = 0);
   document.getElementById('energyBank').value = 12;
@@ -852,6 +928,7 @@ function resetAllData(){
   renderItemRows();
   buildCardEditor();
   recalc();
+  openSetup();
 }
 
 // ---------- Solver: exhaustive branch-and-bound (guaranteed optimal) ----------
@@ -1441,11 +1518,80 @@ function recalc(){
 document.getElementById('energyBank').addEventListener('input', recalc);
 document.getElementById('resetBtn').addEventListener('click', resetAllData);
 
+// ---------- First-run card setup ----------
+function openSetup(){
+  const rows = document.getElementById('setupRows');
+  rows.innerHTML = '';
+  document.getElementById('setupBank').value = document.getElementById('energyBank').value || 12;
+  cards.forEach((card, idx) => {
+    const row = document.createElement('div');
+    row.className = 'setup-row';
+    const nm = document.createElement('div');
+    nm.className = 'sname';
+    nm.textContent = card.name;
+    row.appendChild(nm);
+    const f = document.createElement('div');
+    f.className = 'sfields';
+    [['pts','Points',card.pts],['dmg','Damage',card.dmg||0],['energy','Energy',card.energy]].forEach(([field,label,val]) => {
+      const l = document.createElement('label');
+      l.appendChild(document.createTextNode(label));
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.inputMode = 'numeric';
+      inp.value = val;
+      inp.dataset.idx = idx;
+      inp.dataset.field = field;
+      l.appendChild(inp);
+      f.appendChild(l);
+    });
+    row.appendChild(f);
+    rows.appendChild(row);
+  });
+  document.getElementById('setupModal').classList.add('open');
+}
+
+function closeSetup(){
+  document.getElementById('setupModal').classList.remove('open');
+  setupDone = true;
+  saveState();
+}
+
+document.getElementById('setupSaveBtn').addEventListener('click', () => {
+  document.querySelectorAll('#setupRows input').forEach(inp => {
+    const v = parseInt(inp.value, 10);
+    const c = cards[parseInt(inp.dataset.idx, 10)];
+    if (!c || isNaN(v) || v < 0) return;
+    // energy of 0 would break the solver (division by zero), so keep at least 1
+    c[inp.dataset.field] = (inp.dataset.field === 'energy' && v < 1) ? 1 : v;
+  });
+  const bank = parseInt(document.getElementById('setupBank').value, 10);
+  if (!isNaN(bank) && bank >= 1) document.getElementById('energyBank').value = bank;
+  setupDone = true;
+  document.getElementById('setupModal').classList.remove('open');
+  buildCardEditor();
+  recalc();
+});
+document.getElementById('setupSkipBtn').addEventListener('click', closeSetup);
+document.getElementById('openSetupBtn').addEventListener('click', openSetup);
+document.getElementById('footerSetupBtn').addEventListener('click', openSetup);
+
+// ---------- Friend code: tap to copy ----------
+document.getElementById('friendCodeBtn').addEventListener('click', function(){
+  const btn = this, code = 'PJ3S8B';
+  try{
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = code; }, 1400);
+    }).catch(() => {});
+  } catch(e){}
+});
+
 loadState();
 renderItemRows();
 buildCardEditor();
 renderBoosterRef();
 recalc();
+if (!setupDone) openSetup();
 </script>
 </body>
 </html>
