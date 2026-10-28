@@ -328,6 +328,12 @@
     color: var(--text);
   }
   summary::marker{ color: var(--energy); }
+  details.howto{ margin-top: 14px; }
+  details.howto ol, details.howto ul{ margin: 10px 0 0 20px; padding: 0; }
+  details.howto li{ margin: 6px 0; font-size: 13px; line-height: 1.5; }
+  details.howto li b{ color: var(--text); }
+  details.howto .hnote{ margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  details.howto h4{ margin: 16px 0 0; font-family: 'Rajdhani', sans-serif; font-size: 14px; color: var(--energy); letter-spacing: .04em; }
   .card-editor{
     margin-top: 14px;
     display: grid;
@@ -335,12 +341,17 @@
   }
   .card-row{
     display: grid;
-    grid-template-columns: 130px 1fr 70px 70px 70px 26px;
+    grid-template-columns: 170px 1fr 70px 70px 70px 26px;
     gap: 8px;
     align-items: center;
     font-size: 12px;
   }
   .card-row .name{ color: var(--muted); }
+  .card-row .namecell{ display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .card-row .namecell .own-chk{ flex: none; width: 17px; height: 17px; accent-color: var(--energy); cursor: pointer; margin: 0; }
+  .card-row.locked .name-input,
+  .card-row.locked .recipe-btn,
+  .card-row.locked input.small{ opacity: .5; }
   .card-row input.name-input{
     width: 100%;
     background: var(--panel-raised);
@@ -399,7 +410,7 @@
   }
   .card-editor-head{
     display: grid;
-    grid-template-columns: 130px 1fr 70px 70px 70px 26px;
+    grid-template-columns: 170px 1fr 70px 70px 70px 26px;
     gap: 8px;
     font-size: 10.5px;
     color: var(--muted);
@@ -421,7 +432,7 @@
       border-bottom: 1px solid var(--border);
     }
     .card-row:last-child{ border-bottom: none; padding-bottom: 0; }
-    .card-row input.name-input,
+    .card-row .namecell,
     .card-row .recipe-btn{ grid-column: 1 / -1; }
     .card-row label.mini span{
       display: block;
@@ -652,23 +663,35 @@
     background: var(--panel-raised); border: 1px solid var(--border);
     border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px;
   }
-  .setup-row{
-    border: 1px solid var(--border);
-    background: var(--panel-raised);
-    border-radius: 8px;
-    padding: 9px 12px 10px;
-    margin-bottom: 8px;
+  .setup-tools{ display: flex; gap: 14px; margin-bottom: 8px; font-size: 12.5px; align-items: center; }
+  .setup-group{
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin: 12px 0 5px;
   }
-  .setup-row .sname{ font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
-  .setup-row .sfields{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .setup-row label{ display: block; font-size: 10.5px; color: var(--muted); }
-  .setup-row input, .setup-bank input{
+  .setup-row{
+    display: grid; grid-template-columns: 1fr 84px; gap: 10px; align-items: center;
+    border: 1px solid var(--border); background: var(--panel-raised);
+    border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;
+  }
+  .setup-row.off .sinfo{ opacity: .55; }
+  .setup-row label.own{ display: flex; gap: 9px; align-items: flex-start; cursor: pointer; min-width: 0; }
+  .setup-row label.own input{ flex: none; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--energy); }
+  .setup-row .sname{ font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 15px; line-height: 1.2; }
+  .setup-row .smeta{ font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .setup-row .snote{ font-size: 11px; color: var(--bottleneck); margin-top: 3px; }
+  .setup-row .spts{ font-size: 10.5px; color: var(--muted); }
+  .setup-row .spts input{
     display: block; width: 100%; margin-top: 2px;
     background: var(--bg); border: 1px solid var(--border); color: var(--text);
     border-radius: 6px; padding: 6px 4px; text-align: center;
     font-family: 'IBM Plex Mono', monospace; font-size: 14px;
   }
-  .setup-bank input{ width: 64px; margin-top: 0; }
+  .setup-bank input{
+    display: block; width: 64px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 4px; text-align: center;
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+  }
   .setup-link{
     background: none; border: none; color: var(--energy); text-decoration: underline;
     cursor: pointer; font-family: inherit; font-size: inherit; padding: 0;
@@ -690,6 +713,31 @@
       <div class="stat damage"><div class="n" id="totalDamage">0</div><div class="l">Damage</div></div>
     </div>
   </header>
+
+  <details class="howto" id="howTo">
+    <summary>How to use this tool</summary>
+    <h4>Quick start</h4>
+    <ol>
+      <li><b>Pick your cards.</b> Open <i>Disaster card settings</i> (or the quick card setup), tick the cards you have unlocked, and enter the war points each one shows in-game. The plan only uses ticked cards.</li>
+      <li><b>Enter your depot.</b> Type your war items or use + and −. The plan updates as you type.</li>
+      <li><b>Read the plan.</b> <i>Optimal Attack Plan</i> is the best use of everything you have, sorted by points per energy. If you might get interrupted, fire from the top down.</li>
+      <li><b>Hit "Fire ×1"</b> after each attack you cast in the game. The items are taken out of your depot and the plan recalculates.</li>
+    </ol>
+    <h4>The extras</h4>
+    <ul>
+      <li><b>Safest attack to fire right now:</b> the cast that costs your total plan the least, if you need to attack before you're ready.</li>
+      <li><b>Safe to give teammates:</b> items left over after the best plan, so giving them away costs you nothing.</li>
+      <li><b>Bottleneck items:</b> items stuck at zero that are blocking cards.</li>
+      <li><b>Best items to chase:</b> which items would add the most points if you got more of them.</li>
+      <li><b>Energy-bank burst planner:</b> the best attacks to fit inside one energy bank. Enter your bank size, and set your Jackpot boosters under <i>Battle boosters</i> to line up the biggest hits for the Jackpot window.</li>
+    </ul>
+    <h4>Good to know</h4>
+    <ul>
+      <li><b>Points depend on card level.</b> When a card levels up, update its points in <i>Disaster card settings</i>. The plan is only as accurate as those numbers.</li>
+      <li><b>Your data stays on your device.</b> Items and settings are saved in this browser only. Your phone and laptop won't share them, and clearing browser data wipes them.</li>
+      <li><b>Cards missing or wrong?</b> You can edit recipes, damage and energy, or add a new disaster, at the bottom of <i>Disaster card settings</i>.</li>
+    </ul>
+  </details>
 
   <div class="grid">
 
@@ -718,6 +766,7 @@
         </table>
         <div class="narrow-cards" id="planCards"></div>
         <div id="emptyPlanMsg" style="display:none; color: var(--muted); padding: 14px 0; font-size: 13px;">No attacks are castable with your current depot yet — add some items on the left.</div>
+        <div id="noCardsMsg" style="display:none; color: var(--bottleneck); padding: 14px 0; font-size: 13px;">You haven't marked any cards as unlocked, so there is nothing to plan with. <button type="button" class="setup-link" id="noCardsBtn">Pick your cards</button></div>
       </div>
 
       <div class="callout" id="safestCallout" style="display:none;">
@@ -771,10 +820,10 @@
 
   <details>
     <summary>Disaster card settings</summary>
-    <div class="desc" style="margin-top:8px;">Update points, damage, energy cost, or items needed whenever a card levels up, or add a card you've newly unlocked. Damage is the amount a cast takes off the enemy city's health, as shown on the card in-game. Tap "Items needed" to set the recipe.</div>
-    <div style="margin:10px 0 4px;"><button type="button" class="setup-link" id="openSetupBtn">Run the quick card setup</button> <span style="color:var(--muted); font-size:12px;">(all your cards on one screen)</span></div>
+    <div class="desc" style="margin-top:8px;">Tick the box next to each card you have unlocked. The plan only uses ticked cards. Update points whenever a card levels up, or add a card that's new to the game. Damage is the amount a cast takes off the enemy city's health, as shown on the card in-game. Tap "Items needed" to set the recipe.</div>
+    <div style="margin:10px 0 4px;"><button type="button" class="setup-link" id="openSetupBtn">Run the quick card setup</button> <span style="color:var(--muted); font-size:12px;">(unlocks and points on one screen)</span></div>
     <div class="card-editor-head">
-      <div>Card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
+      <div>Unlocked / Card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
     </div>
     <div class="card-editor" id="cardEditor"></div>
     <button type="button" class="add-card-btn" id="addCardBtn">+ Add new disaster</button>
@@ -809,9 +858,10 @@
 
 <div class="modal-overlay" id="setupModal">
   <div class="modal-box setup-box">
-    <h3>Set up your cards</h3>
-    <div class="desc">The numbers below are one player's card levels. Yours are probably different, and the plan is only as good as these. Check each card in-game and enter the points, damage and energy it shows. Item recipes don't change with level. You can change all of this later in Disaster card settings.</div>
+    <h3>Which cards do you have?</h3>
+    <div class="desc">Tick the cards you have and enter the war points each one shows in-game. Points rise with card level (Level 1 is 100 per point of damage, about +10% per level), so these are Level 1 starting values. Everything can be changed later in Disaster card settings.</div>
     <div class="setup-bank"><span>Energy bank size (your arena's limit)</span><input type="text" inputmode="numeric" id="setupBank"></div>
+    <div class="setup-tools"><button type="button" class="setup-link" id="setupAllBtn">Select all</button><button type="button" class="setup-link" id="setupNoneBtn">Clear</button></div>
     <div id="setupRows"></div>
     <div class="modal-actions">
       <button type="button" class="btn-cancel" id="setupSkipBtn">Skip for now</button>
@@ -834,35 +884,63 @@
 
 <script>
 // ---------- Data ----------
-const ITEMS = ["Propeller","Pliers","FireHydrant","Ammo","Gasoline","Medkit","Plunger","RubberBoots","Megaphone","Duck","Anvil","Binoculars"];
+const ITEMS = ["Propeller","Pliers","FireHydrant","Ammo","Gasoline","Medkit","Plunger","RubberBoots","Megaphone","Duck","Anvil","Binoculars","Donut"];
 const ITEM_LABELS = {
   Propeller:"Propeller", Pliers:"Pliers", FireHydrant:"Fire Hydrant", Ammo:"Ammo",
   Gasoline:"Gasoline", Medkit:"Medkit", Plunger:"Plunger", RubberBoots:"Rubber Boots",
-  Megaphone:"Megaphone", Duck:"Rubber Duck", Anvil:"Anvil", Binoculars:"Binoculars"
+  Megaphone:"Megaphone", Duck:"Rubber Duck", Anvil:"Anvil", Binoculars:"Binoculars", Donut:"Donut"
 };
 
+// Full attack catalog. Recipe, energy and damage are fixed by the game. Points depend on each player's card level:
+// the values below are Level 1 (100 points per point of damage), and each level adds roughly 10%.
+// Players set their own points in the card setup. "owned" is whether the player has unlocked the card.
+// Source: SimCity wiki Club Wars attack list (checked against 14 cards from a live account; the other 14 are single-source).
 const DEFAULT_CARDS = [
-  {name:"Comic Hand",      items:{Plunger:1,Duck:1},                     pts:110,  energy:1, dmg:1},
-  {name:"Shrink Ray",      items:{Pliers:1,Megaphone:2},                 pts:300,  energy:3, dmg:3},
-  {name:"Not in Kansas",   items:{Anvil:1,Propeller:1},                  pts:300,  energy:4, dmg:3},
-  {name:"Magnetism",       items:{Binoculars:1,FireHydrant:2,Anvil:2},   pts:365,  energy:2, dmg:3},
-  {name:"Tentacle Vortex", items:{Plunger:1,Duck:1,Propeller:2},         pts:220,  energy:3, dmg:2},
-  {name:"Disco Twister",   items:{Megaphone:1,Pliers:1,Propeller:2},     pts:600,  energy:6, dmg:6},
-  {name:"Blizzaster",      items:{Propeller:1,Ammo:2,Duck:3},            pts:725,  energy:6, dmg:6},
-  {name:"Hands of Doom",   items:{Ammo:2,Duck:2,Pliers:5},               pts:800,  energy:8, dmg:8},
-  {name:"16 Tons",         items:{Pliers:1,FireHydrant:2,Anvil:4},       pts:600,  energy:6, dmg:6},
-  {name:"Spiders",         items:{Gasoline:1,Binoculars:2,Ammo:5},       pts:990,  energy:9, dmg:9},
-  {name:"Building Portal", items:{FireHydrant:3,Plunger:3,Propeller:4}, pts:880,  energy:7, dmg:8},
-  {name:"B Movie Monster", items:{RubberBoots:2,Plunger:2,Megaphone:2},  pts:1000, energy:8, dmg:10},
-  {name:"Mellow Bellow",   items:{Megaphone:4,Pliers:3,Propeller:4},     pts:1330, energy:8, dmg:11},
-  {name:"Shield Buster",   items:{Gasoline:5,Medkit:1},                  pts:700,  energy:7, dmg:0},
+  // Class S
+  {name:"Comic Hand",        cls:"S",   rarity:"Common",    items:{Plunger:1,Duck:1},                       pts:100,  energy:1,  dmg:1},
+  {name:"Shrink Ray",        cls:"S",   rarity:"Rare",      items:{Pliers:1,Megaphone:2},                   pts:300,  energy:3,  dmg:3},
+  {name:"Giant Rock Monster",cls:"S",   rarity:"Rare",      items:{FireHydrant:1,Binoculars:1},             pts:200,  energy:2,  dmg:2},
+  {name:"Not in Kansas",     cls:"S",   rarity:"Legendary", items:{Anvil:1,Propeller:1},                    pts:300,  energy:4,  dmg:3},
+  // Class M
+  {name:"Magnetism",         cls:"M",   rarity:"Common",    items:{Binoculars:1,FireHydrant:2,Anvil:2},     pts:300,  energy:2,  dmg:3},
+  {name:"Tentacle Vortex",   cls:"M",   rarity:"Common",    items:{Plunger:1,Duck:1,Propeller:2},           pts:200,  energy:3,  dmg:2},
+  {name:"Flying Vu Robot",   cls:"M",   rarity:"Rare",      items:{Ammo:2,Gasoline:2},                      pts:400,  energy:4,  dmg:4},
+  {name:"Disco Twister",     cls:"M",   rarity:"Legendary", items:{Megaphone:1,Pliers:1,Propeller:2},       pts:600,  energy:6,  dmg:6},
+  // Class L
+  {name:"Plant Monster",     cls:"L",   rarity:"Common",    items:{Plunger:2,Gasoline:2,RubberBoots:2},     pts:400,  energy:4,  dmg:4},
+  {name:"Blizzaster",        cls:"L",   rarity:"Rare",      items:{Propeller:1,Ammo:2,Duck:3},              pts:600,  energy:6,  dmg:6},
+  {name:"Fishaster",         cls:"L",   rarity:"Rare",      items:{Duck:1,RubberBoots:3,FireHydrant:3},     pts:700,  energy:7,  dmg:7},
+  {name:"Ancient Curse",     cls:"L",   rarity:"Legendary", items:{RubberBoots:1,Megaphone:2,Binoculars:3}, pts:800,  energy:8,  dmg:8},
+  // Class XL
+  {name:"Hands of Doom",     cls:"XL",  rarity:"Common",    items:{Ammo:2,Duck:2,Pliers:5},                 pts:800,  energy:8,  dmg:8},
+  {name:"16 Tons",           cls:"XL",  rarity:"Common",    items:{Pliers:1,FireHydrant:2,Anvil:4},         pts:600,  energy:6,  dmg:6},
+  {name:"Spiders",           cls:"XL",  rarity:"Rare",      items:{Gasoline:1,Binoculars:2,Ammo:5},         pts:900,  energy:9,  dmg:9},
+  {name:"Dance Shoes",       cls:"XL",  rarity:"Legendary", items:{Gasoline:2,Binoculars:3,RubberBoots:2},  pts:1000, energy:10, dmg:10},
+  // Class XXL
+  {name:"Building Portal",   cls:"XXL", rarity:"Common",    items:{FireHydrant:3,Plunger:3,Propeller:4},    pts:800,  energy:7,  dmg:8},
+  {name:"Hissy Fit",         cls:"XXL", rarity:"Rare",      items:{Binoculars:2,Pliers:3,RubberBoots:3},    pts:800,  energy:6,  dmg:8},
+  {name:"Mellow Bellow",     cls:"XXL", rarity:"Rare",      items:{Megaphone:4,Pliers:3,Propeller:4},       pts:1100, energy:8,  dmg:11},
+  {name:"B Movie Monster",   cls:"XXL", rarity:"Legendary", items:{RubberBoots:2,Plunger:2,Megaphone:2},    pts:1000, energy:8,  dmg:10},
+  // Class A+
+  {name:"Zest from Above",   cls:"A+",  rarity:"Common",    items:{Binoculars:2,Anvil:3,Ammo:3},            pts:600,  energy:6,  dmg:6,
+     note:"Damage is 4, 6 or 8 per cast. Set to 6 as the average, so adjust if you see otherwise."},
+  {name:"Shield Buster",     cls:"A+",  rarity:"Rare",      items:{Gasoline:5,Medkit:1},                    pts:700,  energy:7,  dmg:7,
+     note:"Can hit shielded cities."},
+  {name:"Electric Deity",    cls:"A+",  rarity:"Legendary", items:{Megaphone:3,Gasoline:3,Anvil:3},         pts:900,  energy:6,  dmg:9,
+     note:"Hits 3 cities for 3 damage each, so 9 damage and 900 points per cast."},
+  {name:"Doomsday Quack",    cls:"A+",  rarity:"Legendary", items:{Donut:1,Duck:10},                        pts:100,  energy:8,  dmg:1,
+     note:"Hits every opponent city. Points for that are not confirmed, so set yours."},
 ];
 
 function cloneDefaultCards(){
-  return DEFAULT_CARDS.map(c => ({ name:c.name, items:Object.assign({}, c.items), pts:c.pts, energy:c.energy, dmg:c.dmg }));
+  return DEFAULT_CARDS.map(c => ({ name:c.name, cls:c.cls, rarity:c.rarity, note:c.note||'', items:Object.assign({}, c.items), pts:c.pts, energy:c.energy, dmg:c.dmg, owned:false }));
 }
 
-let cards = cloneDefaultCards();
+// allCards = every card (unlocked or not). cards = only the unlocked ones, which is what the optimizer uses.
+// They share the same card objects, so editing one edits the other.
+let allCards = cloneDefaultCards();
+let cards = [];
+function syncActive(){ cards = allCards.filter(c => c.owned); }
 
 let depot = {};
 ITEMS.forEach(i => depot[i] = 0);
@@ -872,12 +950,14 @@ const STORAGE_KEY = 'clubWarsOptimizerState_v1';
 
 // Brand-new visitors see the card setup screen once. Anyone with an older save skips it.
 let setupDone = false;
+const CATALOG_VERSION = 3; // 2 = full card catalog with unlock flags, 3 = Electric Deity and Zest from Above corrected
 
 function saveState(){
   try{
     const state = {
       setupDone: setupDone,
-      cards: cards,
+      catalogVersion: CATALOG_VERSION,
+      cards: allCards,
       depot: depot,
       energyBank: document.getElementById('energyBank').value,
       jackpotCount: document.getElementById('jackpotCount').value
@@ -891,20 +971,42 @@ function saveState(){
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    if (!raw){ syncActive(); return; }
     const state = JSON.parse(raw);
     // Saves from before this feature have no flag, so they count as set up. A saved "false" means setup wasn't finished.
     setupDone = state.setupDone !== false;
     if (state.cards && Array.isArray(state.cards) && state.cards.length){
-      cards = state.cards;
-      // Older saves have no damage value: fill it in from the defaults (matched by name), else 0.
-      // Points, energy and recipes you already saved are never touched.
-      cards.forEach(c => {
-        if (typeof c.dmg !== 'number' || isNaN(c.dmg)){
-          const def = DEFAULT_CARDS.find(d => d.name === c.name);
-          c.dmg = def ? def.dmg : 0;
-        }
+      allCards = state.cards;
+      const oldVersion = state.catalogVersion || 1;
+      allCards.forEach(c => {
+        const def = DEFAULT_CARDS.find(d => d.name === c.name);
+        // Older saves have no damage value: fill from the catalog (matched by name), else 0. Points, energy and recipes are never touched.
+        if (typeof c.dmg !== 'number' || isNaN(c.dmg)) c.dmg = def ? def.dmg : 0;
+        // Display-only info comes from the catalog.
+        if (!c.cls) c.cls = def ? def.cls : '';
+        if (!c.rarity) c.rarity = def ? def.rarity : '';
+        if (c.note === undefined) c.note = def ? (def.note || '') : '';
+        // Every card in an older save was one the player was actively using, so they stay unlocked.
+        if (typeof c.owned !== 'boolean') c.owned = true;
+        // One-off fix: Shield Buster was stored with 0 damage; the source lists 7.
+        if (oldVersion < 2 && c.name === 'Shield Buster' && c.dmg === 0) c.dmg = 7;
       });
+      // v3: Electric Deity (3 cities x 3 damage) and Zest from Above (average damage 6). Only replace the old starting values if they were never edited.
+      if (oldVersion < 3){
+        const fix = (name, oldD, oldP, nw) => {
+          const c = allCards.find(x => x.name === name);
+          if (c && c.dmg === oldD && c.pts === oldP){ c.dmg = nw.dmg; c.pts = nw.pts; }
+          if (c){ const def = DEFAULT_CARDS.find(d => d.name === name); if (def) c.note = def.note; }
+        };
+        fix('Electric Deity', 3, 300, {dmg:9, pts:900});
+        fix('Zest from Above', 4, 400, {dmg:6, pts:600});
+      }
+      // Add the cards the player's old save didn't have, locked, so nothing changes in their plan until they unlock them.
+      if (oldVersion < 2){
+        cloneDefaultCards().forEach(dc => {
+          if (!allCards.some(c => c.name === dc.name)) allCards.push(dc);
+        });
+      }
     }
     if (state.depot){
       ITEMS.forEach(i => { depot[i] = parseInt(state.depot[i]) || 0; });
@@ -914,6 +1016,7 @@ function loadState(){
   } catch(e){
     // corrupted or unavailable storage — just start from defaults
   }
+  syncActive();
 }
 
 function resetAllData(){
@@ -921,7 +1024,8 @@ function resetAllData(){
   if (!ok) return;
   try{ localStorage.removeItem(STORAGE_KEY); } catch(e){}
   setupDone = false;
-  cards = cloneDefaultCards();
+  allCards = cloneDefaultCards();
+  syncActive();
   ITEMS.forEach(i => depot[i] = 0);
   document.getElementById('energyBank').value = 12;
   document.getElementById('jackpotCount').value = 0;
@@ -941,39 +1045,145 @@ function maxCastable(card, d, energyLeft){
   return limits.length ? Math.min(...limits) : 0;
 }
 
+// Dense primal simplex for: maximize c.x subject to A x <= b, x >= 0, with b >= 0 (so the slack basis starts feasible).
+function simplexMax(c, A, b){
+  const m = A.length, n = c.length, W = n + m + 1, EPS = 1e-9;
+  const T = [];
+  for (let i = 0; i < m; i++){
+    const row = new Float64Array(W);
+    for (let j = 0; j < n; j++) row[j] = A[i][j];
+    row[n + i] = 1;
+    row[W - 1] = b[i];
+    T.push(row);
+  }
+  const z = new Float64Array(W);
+  for (let j = 0; j < n; j++) z[j] = -c[j];
+  const basis = [];
+  for (let i = 0; i < m; i++) basis.push(n + i);
+  for (let iter = 0; iter < 20000; iter++){
+    let enter = -1;
+    if (iter < 300){
+      let mostNeg = -EPS;
+      for (let j = 0; j < n + m; j++) if (z[j] < mostNeg){ mostNeg = z[j]; enter = j; }
+    } else {
+      for (let j = 0; j < n + m; j++) if (z[j] < -EPS){ enter = j; break; } // Bland's rule: cannot cycle
+    }
+    if (enter < 0) break;
+    let leave = -1, bestRatio = Infinity;
+    for (let i = 0; i < m; i++){
+      const a = T[i][enter];
+      if (a > EPS){
+        const r = T[i][W - 1] / a;
+        if (r < bestRatio - 1e-12 || (Math.abs(r - bestRatio) <= 1e-12 && leave >= 0 && basis[i] < basis[leave])){ bestRatio = r; leave = i; }
+      }
+    }
+    if (leave < 0) return { obj: Infinity, x: null }; // unbounded (cannot happen: every variable is capped by a stock row)
+    const pr = T[leave], pv = pr[enter];
+    for (let j = 0; j < W; j++) pr[j] /= pv;
+    for (let i = 0; i < m; i++){
+      if (i === leave) continue;
+      const f = T[i][enter];
+      if (f !== 0){ const r = T[i]; for (let j = 0; j < W; j++) r[j] -= f * pr[j]; }
+    }
+    const f = z[enter];
+    if (f !== 0) for (let j = 0; j < W; j++) z[j] -= f * pr[j];
+    basis[leave] = enter;
+  }
+  const x = new Float64Array(n);
+  for (let i = 0; i < m; i++) if (basis[i] < n) x[basis[i]] = T[i][W - 1];
+  return { obj: z[W - 1], x };
+}
+
+// Exact optimizer: branch and bound where every node's upper bound comes from the linear-programming relaxation.
+// Always returns a true integer optimum (the LP only ever prunes branches that provably can't beat the best plan found).
 function optimize(startDepot, cardList, energyCap){
   if (energyCap === undefined) energyCap = Infinity;
-  const order = cardList.slice().sort((a,b)=> b.pts - a.pts);
-  const n = order.length;
-  let best = { pts:0, combo:{} };
+  const finiteE = energyCap !== Infinity;
+  const best = { pts: 0, combo: {} };
+  cardList.forEach(c => { best.combo[c.name] = 0; });
 
-  function upperBound(idx, remaining, ptsSoFar, energyLeft){
-    let bound = ptsSoFar;
-    for (let j=idx; j<n; j++){
-      bound += maxCastable(order[j], remaining, energyLeft) * order[j].pts;
+  // only cards that can be cast at least once and are worth points take part
+  const V = [];
+  cardList.forEach(c => {
+    const cap = maxCastable(c, startDepot, energyCap);
+    if (isFinite(cap) && cap > 0 && c.pts > 0) V.push(c);
+  });
+  const n = V.length;
+  if (!n) return best;
+  V.sort((a,b) => b.pts - a.pts);
+
+  const usedItems = ITEMS.filter(i => V.some(c => c.items[i] > 0));
+  const baseA = usedItems.map(i => V.map(c => c.items[i] || 0));
+  const baseB = usedItems.map(i => startDepot[i] || 0);
+  const energyRow = finiteE ? V.map(c => c.energy) : null;
+  const allInt = V.every(c => Number.isInteger(c.pts));
+
+  function evalCombo(k){
+    let pts = 0;
+    for (let j = 0; j < n; j++) pts += k[j] * V[j].pts;
+    return pts;
+  }
+  function record(k){
+    const pts = evalCombo(k);
+    if (pts > best.pts){
+      best.pts = pts;
+      cardList.forEach(c => { best.combo[c.name] = 0; });
+      for (let j = 0; j < n; j++) best.combo[V[j].name] = k[j];
     }
-    return bound;
   }
 
-  function dfs(idx, remaining, chosen, ptsSoFar, energyLeft){
-    if (idx === n){
-      if (ptsSoFar > best.pts){ best.pts = ptsSoFar; best.combo = Object.assign({}, chosen); }
-      return;
+  function node(lo, hi){
+    // remaining stock after the forced minimum casts
+    const b = baseB.slice();
+    let e = finiteE ? energyCap : 0, loPts = 0;
+    for (let j = 0; j < n; j++){
+      if (!lo[j]) continue;
+      for (let r = 0; r < b.length; r++) b[r] -= baseA[r][j] * lo[j];
+      if (finiteE) e -= energyRow[j] * lo[j];
+      loPts += lo[j] * V[j].pts;
     }
-    if (upperBound(idx, remaining, ptsSoFar, energyLeft) <= best.pts) return;
-    const card = order[idx];
-    const mc = maxCastable(card, remaining, energyLeft);
-    for (let k=mc; k>=0; k--){
-      const nr = Object.assign({}, remaining);
-      for (const item in card.items) nr[item] -= card.items[item]*k;
-      chosen[card.name] = k;
-      dfs(idx+1, nr, chosen, ptsSoFar + k*card.pts,
-          energyLeft===Infinity ? Infinity : energyLeft - k*card.energy);
-    }
-    chosen[card.name] = 0;
+    for (let r = 0; r < b.length; r++) if (b[r] < -1e-9) return;
+    if (finiteE && e < -1e-9) return;
+
+    const cols = [];
+    for (let j = 0; j < n; j++) if (hi[j] > lo[j]) cols.push(j);
+    if (!cols.length){ record(lo.slice()); return; }
+
+    const A = [], B = [];
+    for (let r = 0; r < b.length; r++){ A.push(cols.map(j => baseA[r][j])); B.push(Math.max(0, b[r])); }
+    if (finiteE){ A.push(cols.map(j => energyRow[j])); B.push(Math.max(0, e)); }
+    cols.forEach((j, ci) => {
+      if (hi[j] !== Infinity){
+        const row = new Array(cols.length).fill(0); row[ci] = 1;
+        A.push(row); B.push(hi[j] - lo[j]);
+      }
+    });
+    const res = simplexMax(cols.map(j => V[j].pts), A, B);
+    if (res.x === null) return;
+    const bound = loPts + res.obj;
+    if (allInt ? Math.floor(bound + 1e-6) <= best.pts : bound <= best.pts + 1e-9) return;
+
+    // rounding the LP solution down is always feasible: use it as a candidate plan
+    const k = lo.slice();
+    let branchVar = -1;
+    cols.forEach((j, ci) => {
+      const x = res.x[ci];
+      const fl = Math.floor(x + 1e-9);
+      k[j] = lo[j] + fl;
+      if (branchVar < 0 && x - fl > 1e-6 && x - fl < 1 - 1e-6) branchVar = ci;
+    });
+    record(k);
+    if (branchVar < 0) return; // LP solution was already integer: this node is solved
+
+    const j = cols[branchVar];
+    const x = lo[j] + res.x[branchVar];
+    const up = Math.ceil(x - 1e-9), down = Math.floor(x + 1e-9);
+    // branch "cast at least ceil(x)" first, then "cast at most floor(x)"
+    if (up <= hi[j]){ const lo2 = lo.slice(); lo2[j] = up; node(lo2, hi); }
+    { const hi2 = hi.slice(); hi2[j] = down; node(lo, hi2); }
   }
 
-  dfs(0, Object.assign({}, startDepot), {}, 0, energyCap);
+  node(new Array(n).fill(0), new Array(n).fill(Infinity));
   return best;
 }
 
@@ -1051,19 +1261,24 @@ document.getElementById('sortBtn').addEventListener('click', () => {
   renderItemRows();
 });
 
+function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
 function buildCardEditor(){
   const container = document.getElementById('cardEditor');
   container.innerHTML = '';
-  cards.forEach((card, idx) => {
+  allCards.forEach((card, idx) => {
     const row = document.createElement('div');
-    row.className = 'card-row';
+    row.className = 'card-row' + (card.owned ? '' : ' locked');
     const entries = Object.entries(card.items);
     const summary = entries.length
       ? entries.map(([k,v]) => `${ITEM_LABELS[k]||k} ×${v}`).join(', ')
       : 'No items set — click to add';
     row.innerHTML = `
-      <input class="name-input" data-idx="${idx}" data-field="name" value="${card.name}">
-      <button type="button" class="recipe-btn${entries.length?'':' empty'}" data-idx="${idx}" title="${summary}">${summary}</button>
+      <div class="namecell">
+        <input type="checkbox" class="own-chk" data-idx="${idx}" ${card.owned ? 'checked' : ''} title="I have this card unlocked" aria-label="Unlocked">
+        <input class="name-input" data-idx="${idx}" data-field="name" value="${escAttr(card.name)}">
+      </div>
+      <button type="button" class="recipe-btn${entries.length?'':' empty'}" data-idx="${idx}" title="${escAttr(summary)}">${escAttr(summary)}</button>
       <label class="mini"><span>Points</span><input class="small" data-idx="${idx}" data-field="pts" value="${card.pts}"></label>
       <label class="mini"><span>Damage</span><input class="small" data-idx="${idx}" data-field="dmg" value="${card.dmg||0}"></label>
       <label class="mini"><span>Energy</span><input class="small" data-idx="${idx}" data-field="energy" value="${card.energy}"></label>
@@ -1072,16 +1287,28 @@ function buildCardEditor(){
     container.appendChild(row);
   });
 
+  container.querySelectorAll('input.own-chk').forEach(chk => {
+    chk.addEventListener('change', () => {
+      const card = allCards[parseInt(chk.dataset.idx)];
+      card.owned = chk.checked;
+      chk.closest('.card-row').classList.toggle('locked', !card.owned);
+      syncActive();
+      recalc();
+    });
+  });
+
   container.querySelectorAll('input.name-input, input.small').forEach(inp => {
     inp.addEventListener('change', () => {
       const idx = parseInt(inp.dataset.idx);
       const field = inp.dataset.field;
       if (field === 'pts' || field === 'energy' || field === 'dmg'){
         const v = parseFloat(inp.value);
-        if (!isNaN(v) && v >= 0) cards[idx][field] = v;
+        // energy must stay above 0 or the solver divides by zero
+        if (!isNaN(v) && v >= 0 && !(field === 'energy' && v < 1)) allCards[idx][field] = v;
+        else inp.value = allCards[idx][field];
       } else if (field === 'name'){
         const v = inp.value.trim();
-        if (v) cards[idx].name = v;
+        if (v) allCards[idx].name = v;
       }
       recalc();
     });
@@ -1094,7 +1321,8 @@ function buildCardEditor(){
   container.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.idx);
-      cards.splice(idx, 1);
+      allCards.splice(idx, 1);
+      syncActive();
       buildCardEditor();
       recalc();
     });
@@ -1104,11 +1332,12 @@ function buildCardEditor(){
 document.getElementById('addCardBtn').addEventListener('click', () => {
   let n = 1;
   let name = 'New Disaster';
-  while (cards.some(c => c.name === name)){
+  while (allCards.some(c => c.name === name)){
     n += 1;
     name = `New Disaster ${n}`;
   }
-  cards.push({ name, items:{}, pts:100, energy:1, dmg:0 });
+  allCards.push({ name, cls:'', rarity:'', note:'', items:{}, pts:100, energy:1, dmg:0, owned:true });
+  syncActive();
   buildCardEditor();
   recalc();
 });
@@ -1118,7 +1347,7 @@ let editingCardIdx = null;
 
 function openRecipeModal(idx){
   editingCardIdx = idx;
-  const card = cards[idx];
+  const card = allCards[idx];
   document.getElementById('recipeModalTitle').textContent = `Items needed — ${card.name}`;
   const grid = document.getElementById('recipeGrid');
   grid.innerHTML = '';
@@ -1152,7 +1381,7 @@ document.getElementById('recipeSaveBtn').addEventListener('click', () => {
     const v = parseInt(document.getElementById('rq-' + item).value) || 0;
     if (v > 0) newItems[item] = v;
   });
-  cards[editingCardIdx].items = newItems;
+  allCards[editingCardIdx].items = newItems;
   closeRecipeModal();
   buildCardEditor();
   recalc();
@@ -1381,7 +1610,9 @@ function recalc(){
     btn.addEventListener('click', () => fireAttack(btn.dataset.name));
   });
 
-  document.getElementById('emptyPlanMsg').style.display = rows.length ? 'none' : 'block';
+  const noCards = cards.length === 0;
+  document.getElementById('emptyPlanMsg').style.display = (rows.length || noCards) ? 'none' : 'block';
+  document.getElementById('noCardsMsg').style.display = noCards ? 'block' : 'none';
   document.getElementById('totalPts').textContent = result.pts.toLocaleString();
   document.getElementById('totalEnergy').textContent = totalEnergy.toLocaleString();
   document.getElementById('totalAttacks').textContent = totalAttacks.toLocaleString();
@@ -1523,29 +1754,40 @@ function openSetup(){
   const rows = document.getElementById('setupRows');
   rows.innerHTML = '';
   document.getElementById('setupBank').value = document.getElementById('energyBank').value || 12;
-  cards.forEach((card, idx) => {
-    const row = document.createElement('div');
-    row.className = 'setup-row';
-    const nm = document.createElement('div');
-    nm.className = 'sname';
-    nm.textContent = card.name;
-    row.appendChild(nm);
-    const f = document.createElement('div');
-    f.className = 'sfields';
-    [['pts','Points',card.pts],['dmg','Damage',card.dmg||0],['energy','Energy',card.energy]].forEach(([field,label,val]) => {
-      const l = document.createElement('label');
-      l.appendChild(document.createTextNode(label));
+  const order = ['S','M','L','XL','XXL','A+',''];
+  const groups = {};
+  allCards.forEach((card, idx) => { (groups[card.cls || ''] = groups[card.cls || ''] || []).push([card, idx]); });
+  order.forEach(cls => {
+    if (!groups[cls]) return;
+    const gh = document.createElement('div');
+    gh.className = 'setup-group';
+    gh.textContent = cls ? `Class ${cls}` : 'Your own cards';
+    rows.appendChild(gh);
+    groups[cls].forEach(([card, idx]) => {
+      const row = document.createElement('div');
+      row.className = 'setup-row' + (card.owned ? '' : ' off');
+      const lab = document.createElement('label');
+      lab.className = 'own';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox'; chk.checked = !!card.owned; chk.dataset.idx = idx; chk.dataset.field = 'owned';
+      chk.addEventListener('change', () => row.classList.toggle('off', !chk.checked));
+      const info = document.createElement('div');
+      info.className = 'sinfo';
+      const nm = document.createElement('div'); nm.className = 'sname'; nm.textContent = card.name;
+      const meta = document.createElement('div'); meta.className = 'smeta';
+      meta.textContent = [card.rarity, `${card.dmg||0} dmg`, `${card.energy} energy`].filter(Boolean).join(' · ');
+      info.appendChild(nm); info.appendChild(meta);
+      if (card.note){ const nt = document.createElement('div'); nt.className = 'snote'; nt.textContent = card.note; info.appendChild(nt); }
+      lab.appendChild(chk); lab.appendChild(info);
+      const pl = document.createElement('label');
+      pl.className = 'spts';
+      pl.appendChild(document.createTextNode('Points'));
       const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.inputMode = 'numeric';
-      inp.value = val;
-      inp.dataset.idx = idx;
-      inp.dataset.field = field;
-      l.appendChild(inp);
-      f.appendChild(l);
+      inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = card.pts; inp.dataset.idx = idx; inp.dataset.field = 'pts';
+      pl.appendChild(inp);
+      row.appendChild(lab); row.appendChild(pl);
+      rows.appendChild(row);
     });
-    row.appendChild(f);
-    rows.appendChild(row);
   });
   document.getElementById('setupModal').classList.add('open');
 }
@@ -1556,17 +1798,28 @@ function closeSetup(){
   saveState();
 }
 
+function setAllSetupChecks(on){
+  document.querySelectorAll('#setupRows input[data-field=owned]').forEach(c => {
+    c.checked = on;
+    c.closest('.setup-row').classList.toggle('off', !on);
+  });
+}
+document.getElementById('setupAllBtn').addEventListener('click', () => setAllSetupChecks(true));
+document.getElementById('setupNoneBtn').addEventListener('click', () => setAllSetupChecks(false));
+document.getElementById('noCardsBtn').addEventListener('click', openSetup);
+
 document.getElementById('setupSaveBtn').addEventListener('click', () => {
   document.querySelectorAll('#setupRows input').forEach(inp => {
+    const c = allCards[parseInt(inp.dataset.idx, 10)];
+    if (!c) return;
+    if (inp.dataset.field === 'owned'){ c.owned = inp.checked; return; }
     const v = parseInt(inp.value, 10);
-    const c = cards[parseInt(inp.dataset.idx, 10)];
-    if (!c || isNaN(v) || v < 0) return;
-    // energy of 0 would break the solver (division by zero), so keep at least 1
-    c[inp.dataset.field] = (inp.dataset.field === 'energy' && v < 1) ? 1 : v;
+    if (!isNaN(v) && v >= 0) c.pts = v;
   });
   const bank = parseInt(document.getElementById('setupBank').value, 10);
   if (!isNaN(bank) && bank >= 1) document.getElementById('energyBank').value = bank;
   setupDone = true;
+  syncActive();
   document.getElementById('setupModal').classList.remove('open');
   buildCardEditor();
   recalc();
