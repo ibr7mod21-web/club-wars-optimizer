@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="War Room">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <title>War Room · Club Wars attack optimizer</title>
 <meta name="description" content="Enter your war items and get the Club Wars attack plan that earns the most points.">
 <meta name="theme-color" content="#000000">
@@ -16,7 +23,7 @@
     --fill: #2c2c2f;
     --fill-hover: #3a3a3e;
     --sep: rgba(255,255,255,.09);
-    --ring: rgba(255,255,255,.07);
+    --ring: rgba(255,255,255,.045);
     --text: #f5f5f7;
     --text-secondary: #9a9aa2;
     --pts: #ffc20a;
@@ -28,6 +35,7 @@
     --fire-1: #f4693f;
     --fire-2: #dc3b35;
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+    --num: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
     --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-9: 56px; --space-10: 80px;
     --ease: cubic-bezier(.2,.8,.2,1);
@@ -47,18 +55,15 @@
   .ico-stroke{ fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
   /* Masthead and pinned totals */
-  .masthead{ padding-block: 44px 24px; }
+  .masthead{ padding-block: calc(44px + env(safe-area-inset-top)) 24px; }
   .brand{ font-size: 40px; line-height: 1.05; font-weight: 700; letter-spacing: -.03em; margin: 0; }
   .tagline{ color: var(--text-secondary); font-size: 17px; margin: var(--space-2) 0 0; max-width: 52ch; }
-  .metrics{ position: sticky; top: 12px; z-index: 20; padding: 0 var(--space-6); pointer-events: none; }
+  .metrics{ position: sticky; top: calc(12px + env(safe-area-inset-top)); z-index: 20; padding: 0 var(--space-6); pointer-events: none; }
   .metrics-in{
     pointer-events: auto;
     max-width: 1072px; margin: 0 auto; padding: 12px 28px;
     display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 48px; align-items: end;
-    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
-    -webkit-backdrop-filter: blur(28px) saturate(190%); backdrop-filter: blur(28px) saturate(190%);
     border-radius: 28px;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.13), inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.55);
   }
   .metric{ display: flex; flex-direction: column; min-width: 0; }
   .mv{ font-size: 28px; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
@@ -140,9 +145,6 @@
   .dn{ font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
   .dm{ font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
   .only-sm{ display: none; }
-  #planBody td:nth-child(3), #burstBody td:nth-child(3){ color: var(--pts); font-weight: 600; }
-  #planBody td:nth-child(4), #burstBody td:nth-child(4){ color: var(--dmg); }
-  #planBody td:nth-child(5), #burstBody td:nth-child(5){ color: var(--energy); }
 
   /* Notes and status */
   .note-row{ display: flex; align-items: flex-start; gap: var(--space-2); color: var(--text-secondary); font-size: 13px; padding: var(--space-3) 0 0; }
@@ -223,9 +225,6 @@
   .modal-overlay{ display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.5); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: var(--space-4); }
   .modal-overlay.open{ display: flex; animation: fadeIn 200ms var(--ease); }
   .modal-box{
-    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.05)), rgba(24,24,27,.72);
-    -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.25), 0 30px 80px rgba(0,0,0,.7);
     border-radius: 26px; width: 100%; max-width: 520px; max-height: 88vh; display: flex; flex-direction: column;
     animation: dialogIn 260ms var(--ease);
   }
@@ -255,6 +254,43 @@
   .spts{ font-size: 12px; color: var(--text-secondary); }
   .spts .field{ margin-top: 4px; text-align: center; }
 
+  /* Plan: firing order and energy bar */
+  th.ord, td.ord{ width: 1%; padding-inline-end: 4px; }
+  .nb{ display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--fill); color: var(--text-secondary); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #planBody tr:first-child .nb{ background: linear-gradient(180deg, #ffcb3d, #ffa51f); color: #000; }
+  #planBody td:nth-child(4), #burstBody td:nth-child(3){ color: var(--pts); font-weight: 600; }
+  #planBody td:nth-child(5), #burstBody td:nth-child(4){ color: var(--dmg); }
+  #planBody td:nth-child(6), #burstBody td:nth-child(5){ color: var(--energy); }
+  .ebar{ margin: var(--space-4) 0 var(--space-5); }
+  .ebar-track{ position: relative; display: flex; gap: 2px; height: 10px; border-radius: 999px; background: var(--fill); }
+  .seg{ flex-basis: 0; min-width: 3px; background: linear-gradient(180deg, #ffcb3d, #f59e0b); transition: flex-grow 280ms var(--ease); }
+  .seg.alt{ background: linear-gradient(180deg, #ffb340, #e8820c); }
+  .seg:first-child{ border-start-start-radius: 999px; border-end-start-radius: 999px; }
+  .seg.last{ border-start-end-radius: 999px; border-end-end-radius: 999px; }
+  .tick{ position: absolute; top: -5px; bottom: -5px; width: 2px; margin-inline-start: -1px; border-radius: 1px; background: rgba(255,255,255,.7); box-shadow: 0 0 0 2px var(--card-bot); }
+  .ebar-note{ font-size: 12px; color: var(--text-secondary); margin-top: var(--space-2); }
+
+  /* Phone dock: glass bar with the next attack */
+  .dock[hidden]{ display: none; }
+  @media all{
+    .dock:not([hidden]){ display: block; position: fixed; inset-inline: 0; bottom: 0; z-index: 30; padding: 0 var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom)); pointer-events: none; animation: dockIn 260ms var(--ease); }
+    .dock-in{
+      pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+      padding: 10px 10px 10px 20px; border-radius: 26px;
+    }
+    .dock-txt{ min-width: 0; }
+    .dk{ font-size: 11px; font-weight: 600; color: var(--pts); }
+    .dock-name{ font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dock .fire-btn{ height: 40px; padding: 0 18px; font-size: 15px; }
+    body.has-dock footer{ padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    #safestCallout{ display: none !important; }
+  }
+  @media (min-width: 641px){
+    .dock:not([hidden]){ padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom)); }
+    .dock-in{ max-width: 460px; margin: 0 auto; }
+  }
+  @keyframes dockIn{ from{ opacity: 0; transform: translateY(12px); } to{ opacity: 1; transform: none; } }
+
   @media (max-width: 860px){
     .layout{ grid-template-columns: minmax(0, 1fr); }
     .layout > .side{ display: contents; }
@@ -266,7 +302,8 @@
   }
   @media (max-width: 640px){
     .page{ padding-inline: var(--space-4); }
-    .metrics{ padding: 0 var(--space-3); top: 8px; }
+    .metrics{ padding: 0 var(--space-3); top: calc(8px + env(safe-area-inset-top)); }
+    .masthead{ padding-block: calc(28px + env(safe-area-inset-top)) 16px; }
     .metrics-in{ padding: 10px var(--space-4); gap: var(--space-3); grid-template-columns: repeat(4, auto); justify-content: space-between; border-radius: 22px; }
     .mv{ font-size: 20px; }
     .metric.hero .mv{ font-size: 28px; }
@@ -276,7 +313,7 @@
     .panel, .sec{ padding: var(--space-5); border-radius: 20px; }
     details.disc > summary{ padding-inline: var(--space-5); }
     .disc-body{ padding-inline: var(--space-5); padding-bottom: var(--space-5); }
-    .col-opt{ display: none; }
+    .col-opt, #planTable .col-casts, #planTable .dm.each, #planTable .x1{ display: none; }
     .only-sm{ display: block; }
     .card-editor-head{ display: none; }
     .card-editor{ gap: var(--space-4); }
@@ -290,6 +327,12 @@
     .modal-actions{ padding: var(--space-3) var(--space-5); }
   }
   @media (max-width: 380px){
+    #planTable th, #planTable td{ padding-inline: 5px; }
+    #planTable .col-casts, .col-tight{ display: none; }
+    #burstTable th, #burstTable td, .disc-body table th, .disc-body table td{ padding-inline: 5px; }
+    #planTable .fire-btn{ padding: 0 10px; font-size: 13px; }
+    #planTable .nb{ min-width: 20px; height: 20px; padding: 0 4px; font-size: 11px; }
+    .panel{ padding: var(--space-4); }
     .metrics-in{ gap: var(--space-2); }
     .mv{ font-size: 18px; }
     .metric.hero .mv{ font-size: 24px; }
@@ -298,26 +341,274 @@
     .modal-overlay.open, .modal-box{ animation: fadeIn 1ms linear; }
     details.disc > summary .chev, .btn, .icon-btn, .step-btn{ transition: none; }
     .btn:active, .step-btn:active{ transform: none; }
+    .dock:not([hidden]){ animation: none; }
+    .seg{ transition: none; }
   }
 
   main > details.disc{ margin-top: var(--space-5); }
   .stack > details.disc{ margin: 0; }
+
+  /* Liquid glass: one material for everything that floats over the page */
+  .glass{
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02)),
+      rgba(18,18,20,.42);
+    -webkit-backdrop-filter: blur(22px) saturate(190%);
+    backdrop-filter: blur(22px) saturate(190%);
+    box-shadow: inset 0 .5px 0 rgba(255,255,255,.16), 0 10px 30px rgba(0,0,0,.45);
+  }
+  html.refract .glass[data-lens]{
+    -webkit-backdrop-filter: var(--lens) blur(8px) saturate(190%);
+    backdrop-filter: var(--lens) blur(8px) saturate(190%);
+  }
+  .modal-box.glass{ background: rgba(26,26,29,.72); -webkit-backdrop-filter: blur(40px) saturate(190%); backdrop-filter: blur(40px) saturate(190%); }
+
+  /* Fired toast with Undo */
+  .toast-wrap{ position: fixed; inset-inline: 0; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 31; display: flex; justify-content: center; pointer-events: none; padding: 0 var(--space-3); }
+  .toast-wrap[hidden]{ display: none; }
+  .toast{ pointer-events: auto; display: flex; align-items: center; gap: var(--space-4); padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 500; }
+  .toast .btn-text{ color: var(--pts); text-decoration: none; font-weight: 600; opacity: 1; }
+  .toast-wrap.in .toast{ animation: toastIn 240ms var(--ease) both; }
+  .toast-wrap.out .toast{ animation: toastOut 200ms var(--ease) both; }
+  @keyframes toastIn{ from{ opacity: 0; transform: translateY(10px) scale(.97); } to{ opacity: 1; transform: none; } }
+  @keyframes toastOut{ to{ opacity: 0; transform: translateY(6px) scale(.98); } }
+  @media (prefers-reduced-motion: reduce){ .toast-wrap.in .toast, .toast-wrap.out .toast{ animation-duration: 1ms; } }
+
+  /* Jackpot inside the energy bank section */
+  .jp-block{ margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--sep); }
+  .jp-block .inline-field{ margin-top: 0; }
+
+  /* Full how-to: two columns of two */
+  .how-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--space-7); }
+  .how-col + .how-col{ margin-top: 0; }
+
+  @media (max-width: 860px){
+
+    .how-grid{ grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .how-col + .how-col{ margin-top: var(--space-5); }
+  }
+  .fire-btn{ gap: 4px; }
+
+  #extrasPanel:empty{ display: none; }
+  @media (max-width: 860px){ #giveCallout{ order: 3; } }
+
+
+  /* Premium pass */
+  body{ background: radial-gradient(1100px 460px at 50% -160px, rgba(255,159,10,.085), rgba(255,159,10,0) 70%) no-repeat, var(--bg); }
+  .eyebrow{ font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--pts); margin: 0 0 10px; }
+  .brand{ font-size: 48px; letter-spacing: -.035em; }
+  .mv, .t-num, .dock-name, .nb{ font-family: var(--num); }
+  .panel, details.disc, .sec{ box-shadow: inset 0 0 0 1px var(--ring), inset 0 1px 0 rgba(255,255,255,.035); }
+  #planBody tr{ transition: background-color 160ms var(--ease); }
+  @media (hover: hover){ #planBody tr:hover{ background: rgba(255,255,255,.025); } }
+  .ph{ letter-spacing: -.025em; }
+
+  /* War items: one per line, the divider doubles as the usage line */
+  .ilist{ display: flex; flex-direction: column; margin-top: var(--space-2); }
+  .irow{ position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: 11px 0 12px; }
+  .i-info{ display: flex; flex-direction: column; min-width: 0; }
+  .i-name{ font-size: 15px; font-weight: 500; letter-spacing: -.01em; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .i-note{ font-size: 12px; color: var(--text-secondary); min-height: 1.35em; margin-top: 1px; }
+  .i-meter{ position: absolute; inset-inline: 0; bottom: 0; height: 1px; background: var(--sep); }
+  .i-meter span{ display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffcb3d, #ff9f0a); transition: width 320ms var(--ease); }
+  .i-ctrl{ display: grid; grid-template-columns: 30px 56px 30px; align-items: center; padding: 2px; border-radius: 999px; background: var(--fill); transition: background-color 180ms var(--ease); }
+  .t-num{
+    width: 100%; height: 30px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--text);
+    font-size: 19px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .t-num:focus{ outline: none; background: rgba(255,255,255,.08); }
+  .t-step{
+    width: 30px; height: 30px; border: 0; border-radius: 999px; background: transparent; color: var(--text);
+    font-size: 18px; line-height: 1; cursor: pointer; transition: opacity 160ms var(--ease), background-color 160ms var(--ease), transform 120ms var(--ease);
+  }
+  .t-step:hover{ background: var(--fill-hover); }
+  .t-step:active{ transform: scale(.9); }
+  @media (hover: hover) and (pointer: fine){
+    .i-ctrl{ background: transparent; }
+    .t-step{ opacity: 0; }
+    .irow:hover .i-ctrl, .irow:focus-within .i-ctrl{ background: var(--fill); }
+    .irow:hover .t-step, .irow:focus-within .t-step{ opacity: 1; }
+  }
+  .irow[data-state="used"] .i-note{ color: var(--pts); }
+  .irow[data-state="zero"] .i-note{ color: var(--dmg); }
+  .irow[data-state="zero"] .t-num, .irow[data-state="idle"] .t-num{ color: var(--text-secondary); }
+  .irow.bump .t-num{ animation: bump 220ms var(--ease); }
+  @keyframes bump{ 40%{ transform: scale(1.14); } }
+  @media (prefers-reduced-motion: reduce){ .irow.bump .t-num{ animation: none; } .i-meter span{ transition: none; } }
+
+  @media (max-width: 640px){ .brand{ font-size: 38px; } }
+  @media (hover: hover) and (pointer: fine){
+    .i-ctrl{ background: rgba(255,255,255,.04); }
+  }
+
+  /* War items on Mac: no containers. Hover magnifies the count and slides the buttons in. */
+  @media (hover: hover) and (pointer: fine){
+    .i-ctrl, .irow:hover .i-ctrl, .irow:focus-within .i-ctrl{ background: transparent; }
+    .t-num{ transition: transform 220ms var(--ease), color 220ms var(--ease); }
+    .irow:hover .t-num, .irow:focus-within .t-num{ transform: scale(1.22); }
+    .t-num:focus{ background: transparent; }
+    .t-step{ opacity: 0; background: var(--fill); width: 26px; height: 26px; font-size: 16px; justify-self: center; transition: opacity 200ms var(--ease), transform 220ms var(--ease), background-color 160ms var(--ease); }
+    .t-step[data-dir="-1"]{ transform: translateX(10px) scale(.8); }
+    .t-step[data-dir="1"]{ transform: translateX(-10px) scale(.8); }
+    .irow:hover .t-step, .irow:focus-within .t-step{ opacity: 1; transform: none; }
+    .irow:hover .t-step:active{ transform: scale(.88); }
+    .i-name{ transition: transform 220ms var(--ease); transform-origin: left center; }
+    .irow:hover .i-name, .irow:focus-within .i-name{ transform: scale(1.04); }
+    .i-meter{ transition: height 200ms var(--ease); }
+    .irow:hover .i-meter{ height: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .irow:hover .t-num, .irow:focus-within .t-num, .irow:hover .i-name{ transform: none; }
+    .t-step[data-dir="-1"], .t-step[data-dir="1"]{ transform: none; }
+  }
+
+  /* Plan rows: a rounded highlight with room around the badge and the Fire button */
+  #planTable{ border-collapse: separate; border-spacing: 0; }
+  @media (min-width: 641px){
+    #planTable{ width: calc(100% + 24px); margin-inline: -12px; }
+    #planTable th:first-child, #planTable td:first-child{ padding-inline-start: 12px; }
+    #planTable th:last-child, #planTable td:last-child{ padding-inline-end: 12px; }
+  }
+  #planBody tr:hover{ background: none; }
+  #planBody td{ transition: background-color 160ms var(--ease), border-color 160ms var(--ease); }
+  @media (hover: hover){
+    #planBody tr:hover td{ background: rgba(255,255,255,.04); border-bottom-color: transparent; }
+    #planBody tr:hover td:first-child{ border-start-start-radius: 14px; border-end-start-radius: 14px; }
+    #planBody tr:hover td:last-child{ border-start-end-radius: 14px; border-end-end-radius: 14px; }
+    #planBody tr:has(+ tr:hover) td{ border-bottom-color: transparent; }
+  }
+
+  /* Stronger magnify on hover */
+  @media (hover: hover) and (pointer: fine){
+    .irow:hover .t-num, .irow:focus-within .t-num{ transform: scale(1.42); }
+    .irow:hover .i-name, .irow:focus-within .i-name{ transform: scale(1.08); }
+    .t-step[data-dir="-1"]{ transform: translateX(16px) scale(.7); }
+    .t-step[data-dir="1"]{ transform: translateX(-16px) scale(.7); }
+    .irow{ transition: padding 220ms var(--ease); }
+  }
+
+  /* Masthead: nav row plus a short hero */
+  .masthead{ padding-block: calc(18px + env(safe-area-inset-top)) 32px; }
+  .topnav{ display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-bottom: 18px; margin-bottom: 52px; border-bottom: 1px solid var(--sep); }
+  .wordmark{ display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+  .wordmark .mark{ width: 24px; height: 24px; }
+  .nav-links{ display: flex; gap: 4px; }
+  .nav-link{ height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 160ms var(--ease), background-color 160ms var(--ease); }
+  .nav-link:hover{ color: var(--text); background: rgba(255,255,255,.06); }
+  .brand{
+    font-size: 56px; line-height: 1.04; letter-spacing: -.04em; font-weight: 700;
+    background: linear-gradient(180deg, #ffffff 30%, #a1a1a6); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  }
+  .tagline{ font-size: 19px; line-height: 1.45; margin-top: 18px; max-width: 58ch; }
+  .facts{ list-style: none; display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 0; margin: 22px 0 0; font-size: 13px; font-weight: 500; color: var(--text); }
+  .facts li{ display: inline-flex; align-items: center; gap: 8px; }
+  .facts li::before{ content: ""; width: 6px; height: 6px; border-radius: 50%; background: linear-gradient(180deg, #ffcb3d, #ff9f0a); }
+  details.disc{ scroll-margin-top: 120px; }
+
+  /* Fire next lives in the bar on wider screens */
+  .metrics-in{ grid-template-columns: repeat(4, auto) minmax(0, 1fr); }
+  .bar-next{ justify-self: end; align-self: center; display: flex; align-items: center; gap: 16px; padding-inline-start: 24px; border-inline-start: 1px solid var(--sep); min-width: 0; }
+  .bar-next[hidden]{ display: none; }
+  .bn-txt{ min-width: 0; text-align: end; }
+  .bn-name{ font-family: var(--num); font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .bar-next .fire-btn{ height: 38px; padding: 0 18px; font-size: 14px; }
+  @media (min-width: 641px){
+    .dock:not([hidden]){ display: none; }
+    .toast-wrap{ bottom: calc(28px + env(safe-area-inset-bottom)); }
+  }
+  @media (max-width: 960px){ .bn-name{ max-width: 150px; } .metrics-in{ gap: 32px; } }
+  @media (max-width: 640px){ .bar-next{ display: none !important; } }
+
+  /* Footer */
+  .site-footer{ margin-top: 96px; padding-top: 40px; border-top: 1px solid var(--sep); color: var(--text-secondary); font-size: 13px; }
+  .f-top{ display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
+  .f-brand p{ margin: 10px 0 0; max-width: 34ch; }
+  .f-brand .who{ color: var(--text-secondary); margin-top: 14px; }
+  .f-brand .who strong{ color: var(--text); }
+  .f-col h4{ margin: 4px 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
+  .f-col p{ margin: 0 0 12px; line-height: 1.5; }
+  .f-col ul{ list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .f-link{ padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; cursor: pointer; text-align: start; transition: color 160ms var(--ease); }
+  .f-link:hover{ color: var(--text); }
+  .f-danger:hover{ color: var(--dmg); }
+  .f-bottom{ display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 40px; padding: 20px 0 8px; border-top: 1px solid var(--sep); font-size: 12px; }
+  @media (max-width: 860px){ .f-top{ grid-template-columns: 1fr 1fr; } .f-brand{ grid-column: 1 / -1; } }
+  @media (max-width: 640px){
+    .topnav{ margin-bottom: 32px; }
+    .nav-links .nav-link{ padding: 0 10px; }
+    .brand{ font-size: 36px; }
+    .tagline{ font-size: 16px; }
+    .site-footer{ margin-top: 64px; }
+    .f-top{ grid-template-columns: 1fr; gap: 28px; }
+  }
+  @media (max-width: 380px){ .nav-links .nav-link[data-open="burstDisc"]{ display: none; } }
+
+  .wordmark, .nav-link{ white-space: nowrap; }
+  @media (max-width: 640px){
+    .topnav{ padding-bottom: 14px; margin-bottom: 24px; }
+    .nav-links{ gap: 0; }
+    .nav-link{ font-size: 13px; padding: 0 9px; }
+    .nav-link[data-open="burstDisc"]{ display: none; }
+    .masthead{ padding-bottom: 20px; }
+    .eyebrow{ font-size: 11px; margin-bottom: 8px; }
+    .brand{ font-size: 32px; line-height: 1.08; }
+    .tagline{ font-size: 15px; margin-top: 12px; }
+    .facts{ font-size: 12px; gap: 6px 14px; margin-top: 14px; }
+    .facts li{ gap: 6px; }
+    .facts li::before{ width: 5px; height: 5px; }
+  }
+
+  /* Centered hero, opened by the app icon */
+  .masthead{ padding-block: calc(56px + env(safe-area-inset-top)) 40px; }
+  .masthead .hero{ max-width: 820px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .app-icon{ width: 64px; height: 64px; margin-bottom: 22px; filter: drop-shadow(0 10px 24px rgba(255,154,18,.18)) drop-shadow(0 4px 10px rgba(0,0,0,.5)); }
+  .masthead .brand{ max-width: 15ch; text-wrap: balance; }
+  .masthead .tagline{ margin-inline: auto; max-width: 52ch; text-wrap: balance; }
+  .facts{ justify-content: center; }
+  @media (max-width: 640px){
+    .masthead{ padding-block: calc(32px + env(safe-area-inset-top)) 24px; }
+    .app-icon{ width: 52px; height: 52px; margin-bottom: 16px; }
+    .masthead .brand{ max-width: none; }
+  }
 
 </style>
 </head>
 <body>
 
 <header class="page masthead">
-  <h1 class="brand">War Room</h1>
-  <p class="tagline">Enter your war items. Get the Club Wars attack plan that earns the most points.</p>
+  <div class="hero">
+    <svg class="app-icon" viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="aiBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset="1" stop-color="#0b0b0c"/></linearGradient>
+        <linearGradient id="aiAu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd25a"/><stop offset="1" stop-color="#ff9a12"/></linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="15" fill="url(#aiBg)"/>
+      <rect x=".5" y=".5" width="63" height="63" rx="14.5" fill="none" stroke="rgba(255,255,255,.12)"/>
+      <g fill="none" stroke="url(#aiAu)" stroke-width="3.4"><circle cx="32" cy="32" r="16"/><path d="M32 9.5v10M32 44.5v10M9.5 32h10M44.5 32h10"/></g>
+      <path d="M32 26.2 37.8 32 32 37.8 26.2 32Z" fill="url(#aiAu)"/>
+    </svg>
+    <p class="eyebrow">War Room &middot; SimCity BuildIt Club Wars</p>
+    <h1 class="brand">Spend every war item on the best attack.</h1>
+    <p class="tagline">Type in what is in your depot. War Room works out the exact attack plan that earns the most war points, and keeps it up to date as you fire.</p>
+    <ul class="facts">
+      <li>Exact plan, not an estimate</li>
+      <li>Saved on your device</li>
+      <li>Free, no sign-in</li>
+    </ul>
+  </div>
 </header>
 
 <div class="metrics">
-  <div class="metrics-in">
+  <div class="metrics-in glass" data-lens="22">
     <div class="metric hero"><div class="mv" id="totalPts">0</div><div class="ml">War points</div></div>
     <div class="metric"><div class="mv" id="totalEnergy">0</div><div class="ml">Energy</div></div>
     <div class="metric"><div class="mv" id="totalDamage">0</div><div class="ml">Damage</div></div>
     <div class="metric"><div class="mv" id="totalAttacks">0</div><div class="ml">Attacks</div></div>
+    <div class="bar-next" id="barNext" hidden>
+      <div class="bn-txt"><div class="dk">Fire next</div><div class="bn-name" id="barNextName"></div></div>
+      <button type="button" class="btn fire-btn" id="barFire">Fire ×1</button>
+    </div>
   </div>
 </div>
 
@@ -327,26 +618,33 @@
     <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>How to use this tool</summary>
     <div class="disc-body how-grid">
         <div class="how-col"><h4>Quick start</h4>
-      <ol>
-        <li><b>Pick your cards.</b> Open Disaster card settings (or run the quick setup), tick the cards you have unlocked, and enter the war points each one shows in game. The plan only uses ticked cards.</li>
-        <li><b>Enter your depot.</b> Type your war items or use the plus and minus buttons. The plan updates as you type.</li>
-        <li><b>Read the plan.</b> It is sorted by points per energy, so if you might get interrupted, fire from the top down.</li>
-        <li><b>Press Fire after each attack</b> you cast in the game. The items come out of your depot and the plan recalculates.</li>
-      </ol></div>
-        <div class="how-col"><h4>What else it shows</h4>
-      <ul>
-        <li><b>Fire next:</b> the cast that costs your total plan the least, if you need to attack before you are ready.</li>
-        <li><b>Spare items:</b> what is left after the best plan, so giving it away costs you nothing.</li>
-        <li><b>Blocked cards:</b> items at zero that stop cards from being cast.</li>
-        <li><b>Items to chase:</b> which items would add the most points if you got more of them.</li>
-        <li><b>Burst planner:</b> the best attacks to fit inside one energy bank. Set your Jackpot boosters under Battle boosters to line up the biggest hits for the Jackpot window.</li>
-      </ul></div>
+          <ol>
+            <li><b>Pick your cards.</b> Open Disaster card settings (or run the quick setup), tick every card you have unlocked, and type in the war points each one shows in game. The plan only ever uses ticked cards.</li>
+            <li><b>Enter your war items.</b> Type a number next to any item, or use the minus and plus buttons. The plan recalculates on every change.</li>
+            <li><b>Read the plan.</b> Attacks are numbered in firing order, best points per energy first. If you might get interrupted mid-war, fire from number 1 down and you lose the least.</li>
+            <li><b>Press Fire after each cast</b> in the game. That attack's items come out of your depot and the plan updates. Tapped the wrong one? Press Undo on the message that appears.</li>
+          </ol></div>
+        <div class="how-col"><h4>Reading the screen</h4>
+          <ul>
+            <li><b>Totals bar:</b> war points, energy, damage and attacks for the whole plan. It stays pinned while you scroll.</li>
+            <li><b>Energy bar:</b> one segment per cast, left to right in firing order. The white marks show where each energy bank runs out, so you can see how many refills the plan needs.</li>
+            <li><b>War items:</b> the gold line under each item shows how much of it the plan uses. "All used" means every one is needed, "2 spare" means two are left over, and a red note means the item is at zero and locking cards.</li>
+            <li><b>Fire next:</b> the bar at the bottom shows the safest attack to fire right now. It always matches attack number 1.</li>
+          </ul></div>
+        <div class="how-col"><h4>Planning ahead</h4>
+          <ul>
+            <li><b>Spare items:</b> left over after the best plan, so giving them to clubmates costs you nothing.</li>
+            <li><b>Blocked:</b> items at zero that stop cards from being cast at all.</li>
+            <li><b>Items to chase:</b> which items would add the most points if you got more. The full bar is the gain from three more, the darker part is the gain from just one. Use it when asking your club for items.</li>
+            <li><b>Energy bank and Jackpot:</b> the best opener that fits inside one energy bank, at no cost to the rest of your plan. Enter how many Jackpot boosters you have and each one gets its own best window, since Jackpot doubles the war points of every hit while it is active.</li>
+          </ul></div>
         <div class="how-col"><h4>Good to know</h4>
-      <ul>
-        <li><b>Points depend on card level.</b> When a card levels up, update its points in Disaster card settings. The plan is only as accurate as those numbers.</li>
-        <li><b>Your data stays on your device.</b> Items and settings are saved in this browser only. Your phone and laptop will not share them, and clearing browser data erases them.</li>
-        <li><b>A card is missing or wrong?</b> Edit its recipe, damage or energy, or add a new disaster, in Disaster card settings.</li>
-      </ul></div>
+          <ul>
+            <li><b>Points depend on card level.</b> A card earns about 10% more war points per level. When one levels up, update it in Disaster card settings. The plan is only as accurate as those numbers.</li>
+            <li><b>Your data stays on your device.</b> Items and settings are saved in this browser only. Your phone and laptop keep separate copies, and clearing browser data erases them.</li>
+            <li><b>Put it on your home screen.</b> On iPhone, tap Share, then Add to Home Screen. It opens full screen like an app.</li>
+            <li><b>A card is missing or wrong?</b> Edit its recipe, damage or energy, or add a new disaster, in Disaster card settings.</li>
+          </ul></div>
       </div>
   </details>
 
@@ -358,9 +656,15 @@
           <h2 class="ph" id="depotHeading">Your war items</h2>
           <button type="button" class="btn-text" id="sortBtn" title="Reorder the list by current amount">Sort by amount</button>
         </div>
-        <p class="hint">Counts update the plan as you type. The list only reorders when you sort it, so rows do not jump while you edit.</p>
-        <div id="itemRows"></div>
+        <p class="hint">The gold line under each item shows how much of it your plan uses.</p>
+        <div id="itemRows" class="ilist"></div>
       </section>
+      <div class="sec" id="giveCallout" style="display:none;">
+        <div class="sk">Spare items</div>
+        <h3 class="sh" id="giveHeading"></h3>
+        <p id="giveText">The best plan does not need these.</p>
+        <ul class="plain-list" id="giveList"></ul>
+      </div>
       <div class="sec" id="chasePanel" style="display:none;">
         <div class="sk">Items to chase</div>
         <h3 class="sh" id="chaseVerdict"></h3>
@@ -375,11 +679,15 @@
     <div class="stack">
       <section class="panel" aria-labelledby="planHeading">
         <h2 class="ph" id="planHeading">No attack is castable yet</h2>
-        <p class="hint">Sorted by points per energy. The search is exact: no other combination of these items scores higher.</p>
+        <p class="hint">Exact best plan. No other combination scores higher.</p>
+        <div class="ebar" id="energyBar" hidden>
+          <div class="ebar-track" id="energyTrack" role="img"></div>
+          <div class="ebar-note" id="energyNote"></div>
+        </div>
         <table id="planTable" style="display:none;">
           <thead>
             <tr>
-              <th>Disaster</th><th class="num">Casts</th><th class="num">Points</th>
+              <th class="ord"><span class="vh">Order</span></th><th>Disaster</th><th class="num col-casts">Casts</th><th class="num">Points</th>
               <th class="num col-opt">Damage</th><th class="num col-opt">Energy</th>
               <th class="act"><span class="vh">Fire</span></th>
             </tr>
@@ -397,12 +705,6 @@
           <p id="safestText"></p>
         </div>
 
-        <div class="sec" id="giveCallout" style="display:none;">
-          <div class="sk">Spare items</div>
-          <h3 class="sh" id="giveHeading"></h3>
-          <p id="giveText">Left over after the best plan, so giving them away costs your own attacks nothing.</p>
-          <ul class="plain-list" id="giveList"></ul>
-        </div>
 
         <div class="sec" id="bottleneckCallout" style="display:none;">
           <div class="status warn" id="bottleneckStatus"></div>
@@ -413,9 +715,9 @@
       </section>
 
       <details class="disc" id="burstDisc" open>
-        <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Energy-bank burst planner</summary>
+        <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Energy bank and Jackpot</summary>
         <div class="disc-body">
-          <p class="hint" style="margin-top:0;">Picks the best part of your plan that fits inside one energy bank, so it costs the rest of the plan nothing. Use it to time a Jackpot or a full-bank opening strike.</p>
+          <p class="hint" style="margin-top:0;">The best slice of your plan that fits inside one energy bank, at no cost to the rest of it. Jackpot doubles war points while it is active, so line these up with it.</p>
           <div class="inline-field">
             <label for="energyBank">Energy bank size</label>
             <input class="field" type="number" id="energyBank" value="12" min="1" inputmode="numeric">
@@ -423,22 +725,27 @@
           </div>
           <h3 class="ph" id="burstHeading" style="margin-bottom: var(--space-2);">Nothing in your plan fits an energy bank yet</h3>
           <table>
-            <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Points</th><th class="num">Damage</th><th class="num">Energy</th></tr></thead>
+            <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Points</th><th class="num col-tight">Damage</th><th class="num">Energy</th></tr></thead>
             <tbody id="burstBody"></tbody>
           </table>
           <p class="mono" style="margin: var(--space-3) 0 0; color: var(--text-secondary);">Total: <span id="burstPts">0</span> points, <span id="burstDmg">0</span> damage, <span id="burstEnergy">0</span> energy</p>
+          <div class="jp-block">
+            <div class="inline-field">
+              <label for="jackpotCount">Jackpot boosters you have</label>
+              <input class="field" type="number" id="jackpotCount" value="0" min="0" inputmode="numeric">
+            </div>
+            <div id="jackpotWindows"></div>
+          </div>
         </div>
       </details>
     </div>
 
   </div>
 
-
-
-  <details class="disc">
+  <details class="disc" id="cardsDisc">
     <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Disaster card settings</summary>
     <div class="disc-body">
-      <p class="hint" style="margin-top:0;">Tick the cards you have unlocked. The plan only uses ticked cards. Points depend on card level, so update them when a card levels up. Damage is what a cast takes off the enemy city, as shown on the card in game. Select a recipe to change the items it needs.</p>
+      <p class="hint" style="margin-top:0;">Tick the cards you have unlocked. Update points when a card levels up.</p>
       <button type="button" class="btn" id="openSetupBtn">Run quick setup</button>
       <div class="card-editor-head">
         <div>Unlocked and card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
@@ -450,36 +757,61 @@
     </div>
   </details>
 
-  <details class="disc">
-    <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Battle boosters</summary>
-    <div class="disc-body">
-      <p class="hint" style="margin-top:0;">Boosters cost no energy and are not tied to your depot, so they sit outside the plan. Jackpot is worth planning around: it doubles the war points of every hit on the target city while it is active.</p>
-      <div class="inline-field">
-        <label for="jackpotCount">Jackpot boosters you have</label>
-        <input class="field" type="number" id="jackpotCount" value="0" min="0" inputmode="numeric">
-        <span class="tip">Each one gets its own best-fit window from your plan, at no cost to the rest of it.</span>
+  <footer class="site-footer">
+    <div class="f-top">
+      <div class="f-brand">
+        <a class="wordmark" href="./"><svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="mk2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd25a"/><stop offset="1" stop-color="#ff9a12"/></linearGradient></defs><g fill="none" stroke="url(#mk2)" stroke-width="2.2"><circle cx="12" cy="12" r="7"/><path d="M12 2.5v4.5M12 17v4.5M2.5 12H7M17 12h4.5"/></g><path d="M12 9.6 14.4 12 12 14.4 9.6 12Z" fill="url(#mk2)"/></svg><span>War Room</span></a>
+        <p>The Club Wars attack planner for SimCity BuildIt.</p>
+        <p class="who">Made by <strong>Brrville</strong>. Friend code <button type="button" class="code-btn" id="friendCodeBtn" title="Tap to copy">PJ3S8B</button></p>
       </div>
-      <div id="jackpotWindows"></div>
-      <div class="booster-ref" id="boosterRef"></div>
+      <div class="f-col">
+        <h4>Tool</h4>
+        <ul>
+          <li><button type="button" class="f-link" data-open="howTo">How it works</button></li>
+          <li><button type="button" class="f-link" id="footerSetupBtn">Card setup</button></li>
+          <li><button type="button" class="f-link" data-open="burstDisc">Energy bank and Jackpot</button></li>
+        </ul>
+      </div>
+      <div class="f-col">
+        <h4>Your data</h4>
+        <p>Items and card settings stay in this browser. Nothing is sent anywhere.</p>
+        <button type="button" class="f-link f-danger" id="resetBtn">Reset everything</button>
+      </div>
+      <div class="f-col">
+        <h4>On your phone</h4>
+        <p>Tap Share, then Add to Home Screen. War Room opens full screen, like an app.</p>
+      </div>
     </div>
-  </details>
-
-  <footer>
-    <p class="who">Made by <strong>Brrville</strong> &middot; Friend code <button type="button" class="code-btn" id="friendCodeBtn" title="Tap to copy">PJ3S8B</button></p>
-    <p>Your depot and card settings are saved on this device only.</p>
-    <div class="footer-links">
-      <button type="button" class="btn-text" id="footerSetupBtn">Card setup</button>
-      <button type="button" class="btn-text" id="resetBtn">Reset everything to defaults</button>
+    <div class="f-bottom">
+      <span>Unofficial fan tool. Not affiliated with or endorsed by EA or Maxis.</span>
+      <span>War Room &middot; 2026</span>
     </div>
-    <p class="fine">Unofficial fan tool for SimCity BuildIt. Not affiliated with or endorsed by EA or Maxis.</p>
   </footer>
 </main>
+<svg id="lensDefs" width="0" height="0" style="position:absolute" aria-hidden="true"></svg>
+
+<div class="toast-wrap" id="toastWrap" hidden>
+  <div class="toast glass" data-lens="16">
+    <span id="toastText"></span>
+    <button type="button" class="btn-text" id="undoBtn">Undo</button>
+  </div>
+</div>
+
+<div class="dock" id="fireDock" hidden>
+  <div class="dock-in glass" data-lens="20">
+    <div class="dock-txt">
+      <div class="dk">Fire next</div>
+      <div class="dock-name" id="dockName"></div>
+    </div>
+    <button type="button" class="btn fire-btn" id="dockFire">Fire ×1</button>
+  </div>
+</div>
 
 <div class="modal-overlay" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
-  <div class="modal-box">
+  <div class="modal-box glass">
     <div class="modal-head">
       <h3 id="setupTitle">Choose the cards you have unlocked</h3>
-      <p class="hint">Tick each card you own and enter the war points it shows in game. Points rise with card level (about 10% per level), so these are Level 1 starting values. You can change all of this later in Disaster card settings.</p>
+      <p class="hint">Tick each card you own and enter the war points it shows. These are Level 1 values; change them any time.</p>
     </div>
     <div class="modal-scroll">
       <div class="setup-bank"><label for="setupBank">Energy bank size</label><input class="field" type="text" inputmode="numeric" id="setupBank"></div>
@@ -494,7 +826,7 @@
 </div>
 
 <div class="modal-overlay" id="recipeModal" role="dialog" aria-modal="true" aria-labelledby="recipeModalTitle">
-  <div class="modal-box" style="max-width: 440px;">
+  <div class="modal-box glass" style="max-width: 440px;">
     <div class="modal-head">
       <h3 id="recipeModalTitle">Items needed</h3>
       <p class="hint">Set how many of each item this disaster needs. Leave unused items at 0.</p>
@@ -850,14 +1182,32 @@ function statusIcon(kind){
 }
 const ICON_CLOSE = '<svg class="ico ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>';
 let lastLeftover = null;
+// Each row says in words how the plan uses that item, and its gold divider shows the same thing at a glance.
 function applyItemNotes(){
   ITEMS.forEach(item => {
-    const el = $('note-' + item);
-    if (!el) return;
-    if (!lastLeftover){ el.textContent = ''; return; }
-    const have = depot[item] || 0, left = lastLeftover[item] || 0;
-    el.textContent = (have > 0 && left === 0) ? 'All used' : (left > 0 ? `${left} spare` : '');
+    const el = $('note-' + item), tile = $('row-' + item), bar = $('meter-' + item);
+    if (!el || !tile) return;
+    const have = depot[item] || 0;
+    const left = lastLeftover ? Math.max(0, lastLeftover[item] || 0) : have;
+    const used = have - left;
+    let state = 'idle', text = '';
+    if (have === 0){
+      const blocks = cards.filter(c => c.items[item] !== undefined).length;
+      if (blocks){ state = 'zero'; text = `Blocks ${plural(blocks, 'card')}`; }
+      else { text = 'Not needed'; }
+    } else if (left === 0){ state = 'used'; text = 'All used'; }
+    else if (used === 0){ state = 'spare'; text = 'None used'; }
+    else { state = 'part'; text = `${left} spare`; }
+    tile.dataset.state = state;
+    el.textContent = text;
+    if (bar) bar.style.width = have ? (used / have * 100).toFixed(1) + '%' : '0%';
   });
+}
+
+function bumpTile(item){
+  const t = $('row-' + item);
+  if (!t || reduceMotion.matches) return;
+  t.classList.remove('bump'); void t.offsetWidth; t.classList.add('bump');
 }
 
 function renderItemRows(){
@@ -870,34 +1220,36 @@ function renderItemRows(){
 
   container.innerHTML = '';
   sortedItems.forEach(item => {
-    const row = document.createElement('div');
-    row.className = 'item-row';
-    row.id = 'row-' + item;
-    row.innerHTML = `
-      <div class="iname"><label for="in-${item}">${ITEM_LABELS[item]}</label><span class="inote" id="note-${item}"></span></div>
-      <div class="stepper">
-        <button type="button" class="step-btn" data-item="${item}" data-dir="-1" aria-label="One less ${ITEM_LABELS[item]}">&minus;</button>
-        <input class="field" type="number" inputmode="numeric" id="in-${item}" min="0" value="${depot[item]||0}">
-        <button type="button" class="step-btn" data-item="${item}" data-dir="1" aria-label="One more ${ITEM_LABELS[item]}">+</button>
+    const label = ITEM_LABELS[item];
+    const tile = document.createElement('div');
+    tile.className = 'irow';
+    tile.id = 'row-' + item;
+    tile.innerHTML = `
+      <div class="i-info"><label class="i-name" for="in-${item}">${label}</label><span class="i-note" id="note-${item}"></span></div>
+      <div class="i-ctrl">
+        <button type="button" class="t-step" data-item="${item}" data-dir="-1" aria-label="One less ${label}">&minus;</button>
+        <input class="t-num" type="number" inputmode="numeric" id="in-${item}" min="0" value="${depot[item]||0}">
+        <button type="button" class="t-step" data-item="${item}" data-dir="1" aria-label="One more ${label}">+</button>
       </div>
+      <div class="i-meter" aria-hidden="true"><span id="meter-${item}"></span></div>
     `;
-    container.appendChild(row);
+    container.appendChild(tile);
   });
 
-  container.querySelectorAll('button').forEach(btn => {
+  container.querySelectorAll('.t-step').forEach(btn => {
     btn.addEventListener('click', () => {
       const item = btn.dataset.item;
-      const dir = parseInt(btn.dataset.dir);
-      let v = (depot[item]||0) + dir;
+      let v = (depot[item]||0) + parseInt(btn.dataset.dir);
       if (v < 0) v = 0;
       depot[item] = v;
-      const inp = $('in-' + item);
-      if (inp) inp.value = v;
+      $('in-' + item).value = v;
+      bumpTile(item);
       recalc(); // numbers update live, order stays put until Sort is pressed
     });
   });
 
-  container.querySelectorAll('input').forEach(inp => {
+  container.querySelectorAll('.t-num').forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
     inp.addEventListener('input', () => {
       const item = inp.id.replace('in-', '');
       let v = parseInt(inp.value || 0);
@@ -908,6 +1260,10 @@ function renderItemRows(){
   });
   applyItemNotes();
 }
+
+$('sortBtn').addEventListener('click', () => {
+  renderItemRows();
+});
 function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function buildCardEditor(){
@@ -1047,6 +1403,7 @@ const BOOSTERS = [
 
 function renderBoosterRef(){
   const container = $('boosterRef');
+  if (!container) return; // the booster reference was retired; only Jackpot planning remains
   container.innerHTML = '';
   BOOSTERS.forEach(b => {
     const el = document.createElement('div');
@@ -1118,12 +1475,14 @@ function fireAttack(name){
   const card = cards.find(c => c.name === name);
   if (!card) return;
   if (maxCastable(card, depot, Infinity) < 1) return; // safety check, shouldn't happen from the plan table
+  const snapshot = Object.assign({}, depot);
   for (const item in card.items){
     depot[item] = Math.max(0, (depot[item]||0) - card.items[item]);
     const inp = document.getElementById('in-' + item);
     if (inp) inp.value = depot[item];
   }
   recalc(); // numbers update live, order stays put until Sort is pressed
+  showFiredToast(card.name, snapshot);
 }
 
 // ---------- Best items to chase: marginal value of +1 / +3 of each item ----------
@@ -1145,7 +1504,7 @@ let chaseTimer = null;
 let lastBaseline = 0;
 
 function syncExtras(){
-  const any = ['safestCallout','giveCallout','bottleneckCallout'].some(id => $(id).style.display !== 'none');
+  const any = ['bottleneckCallout'].some(id => $(id).style.display !== 'none');
   $('extrasPanel').style.display = any ? 'block' : 'none';
 }
 
@@ -1180,8 +1539,8 @@ function renderChase(){
   const top = rows[0];
   verdict.textContent = `Chase ${ITEM_LABELS[top.item]} first`;
   note.textContent = top.g1 > 0
-    ? `Even one more adds ${top.g1.toLocaleString()} points, and three more add ${top.g3.toLocaleString()}. Each figure is the extra war points your best plan would earn from gaining that many of that one item, based on your current card stats.`
-    : `One more alone adds nothing, but three more add ${top.g3.toLocaleString()} points. Each figure is the extra war points your best plan would earn from gaining that many of that one item, based on your current card stats.`;
+    ? `One more adds ${top.g1.toLocaleString()} points, three more add ${top.g3.toLocaleString()}.`
+    : `One more adds nothing, three more add ${top.g3.toLocaleString()} points.`;
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
@@ -1191,6 +1550,61 @@ function renderChase(){
   });
   table.style.display = 'table';
 }
+// Totals roll to their new value so a change reads as a change, not a flicker.
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+function rollNumber(id, to){
+  const el = $(id);
+  const from = Number(el.dataset.v || 0);
+  el.dataset.v = to;
+  if (from === to || reduceMotion.matches){ el.textContent = Number(to).toLocaleString(); return; }
+  const start = performance.now(), dur = 280;
+  cancelAnimationFrame(el._raf);
+  const step = now => {
+    const t = Math.min(1, (now - start) / dur);
+    const e = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (to - from) * e).toLocaleString();
+    if (t < 1) el._raf = requestAnimationFrame(step);
+  };
+  el._raf = requestAnimationFrame(step);
+}
+
+// One bar for the whole plan: a segment per cast, in firing order, with a tick wherever an energy bank runs out.
+function renderEnergyBar(rows, totalEnergy){
+  const wrap = $('energyBar'), track = $('energyTrack');
+  if (!rows.length || totalEnergy <= 0){ wrap.hidden = true; return; }
+  const bank = parseInt($('energyBank').value) || 12;
+  let html = '';
+  rows.forEach((r, i) => {
+    for (let k = 0; k < r.count; k++){
+      html += `<span class="seg${i % 2 ? ' alt' : ''}" style="flex-grow:${r.card.energy}" title="${escAttr(r.card.name)}, ${r.card.energy} energy"></span>`;
+    }
+  });
+  html = html.replace(/class="seg([^"]*)"(?![\s\S]*class="seg)/, 'class="seg$1 last"');
+  for (let e = bank; e < totalEnergy; e += bank){
+    html += `<span class="tick" style="inset-inline-start:${(e / totalEnergy * 100).toFixed(3)}%"></span>`;
+  }
+  track.innerHTML = html;
+  const banks = Math.ceil(totalEnergy / bank);
+  track.setAttribute('aria-label', `Plan uses ${totalEnergy} energy across ${banks} energy banks`);
+  $('energyNote').textContent = `${totalEnergy} energy over ${plural(banks, 'bank')} of ${bank}. White marks show where each bank runs out.`;
+  wrap.hidden = false;
+}
+
+// Phone dock: the next attack to fire, pinned under your thumb.
+function setDock(card){
+  const dock = $('fireDock');
+  if (!card){ dock.hidden = true; $('barNext').hidden = true; document.body.classList.remove('has-dock'); return; }
+  $('barNextName').textContent = `${card.name} · ${Number(card.pts).toLocaleString()} pts`;
+  $('barFire').dataset.name = card.name;
+  $('barNext').hidden = false;
+  $('dockName').textContent = `${card.name} · ${Number(card.pts).toLocaleString()} pts`;
+  $('dockFire').dataset.name = card.name;
+  dock.hidden = false;
+  document.body.classList.add('has-dock');
+}
+$('dockFire').addEventListener('click', e => fireAttack(e.currentTarget.dataset.name));
+$('barFire').addEventListener('click', e => fireAttack(e.currentTarget.dataset.name));
+
 function recalc(){
   // 1. Full optimal plan
   const result = optimize(depot, cards);
@@ -1206,7 +1620,7 @@ function recalc(){
   const planBody = $('planBody');
   planBody.innerHTML = '';
   let totalEnergy = 0, totalAttacks = 0, totalDamage = 0;
-  rows.forEach(r => {
+  rows.forEach((r, i) => {
     const c = r.card;
     const dmgEach = c.dmg || 0;
     const totalPtsCard = c.pts * r.count;
@@ -1218,16 +1632,17 @@ function recalc(){
     const shield = c.name === 'Shield Buster' ? ', strips shield' : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td class="ord"><span class="nb">${i + 1}</span></td>
       <td>
         <div class="dn">${esc(c.name)}</div>
-        <div class="dm">Each: ${n(c.pts)} pts, ${n(dmgEach)} dmg, ${n(c.energy)} energy${shield}</div>
-        <div class="dm only-sm">All casts: ${n(totalDmgCard)} dmg, ${n(totalEnergyCard)} energy</div>
+        <div class="dm each">Each: ${n(c.pts)} pts, ${n(dmgEach)} dmg, ${n(c.energy)} energy${shield}</div>
+        <div class="dm only-sm">${r.count}× &middot; ${n(totalDmgCard)} dmg &middot; ${n(totalEnergyCard)} energy</div>
       </td>
-      <td class="num">${r.count}×</td>
+      <td class="num col-casts">${r.count}×</td>
       <td class="num">${n(totalPtsCard)}</td>
       <td class="num col-opt">${n(totalDmgCard)}</td>
       <td class="num col-opt">${n(totalEnergyCard)}</td>
-      <td class="act"><button type="button" class="btn fire-btn" data-name="${escAttr(c.name)}">Fire ×1</button></td>
+      <td class="act"><button type="button" class="btn fire-btn" data-name="${escAttr(c.name)}" aria-label="Fire ${escAttr(c.name)} once">Fire<span class="x1">×1</span></button></td>
     `;
     planBody.appendChild(tr);
   });
@@ -1242,10 +1657,11 @@ function recalc(){
   $('planHeading').textContent = rows.length
     ? `${plural(totalAttacks, 'attack')} use ${n(totalEnergy)} energy for ${n(result.pts)} points`
     : (noCards ? 'No cards selected' : 'No attack is castable yet');
-  $('totalPts').textContent = n(result.pts);
-  $('totalEnergy').textContent = n(totalEnergy);
-  $('totalAttacks').textContent = n(totalAttacks);
-  $('totalDamage').textContent = n(totalDamage);
+  rollNumber('totalPts', result.pts);
+  rollNumber('totalEnergy', totalEnergy);
+  rollNumber('totalAttacks', totalAttacks);
+  rollNumber('totalDamage', totalDamage);
+  renderEnergyBar(rows, totalEnergy);
 
   // 2. Leftover items
   const used = {}; ITEMS.forEach(i => used[i]=0);
@@ -1269,7 +1685,7 @@ function recalc(){
     if (leftover[item] > 0){
       spareTotal += leftover[item];
       const li = document.createElement('li');
-      li.innerHTML = `<span>${ITEM_LABELS[item]}</span><span class="qty">×${leftover[item]}${leftover[item] === 1 ? ', only one spare' : ''}</span>`;
+      li.innerHTML = `<span>${ITEM_LABELS[item]}</span><span class="qty">×${leftover[item]}</span>`;
       giveList.appendChild(li);
     }
   });
@@ -1300,6 +1716,7 @@ function recalc(){
   const castableNow = cards.filter(c => maxCastable(c, depot, Infinity) >= 1);
   if (castableNow.length === 0 || result.pts === 0){
     safestCallout.style.display = 'none';
+    setDock(null);
   } else {
     let bestChoice = null, bestOppCost = Infinity;
     castableNow.forEach(c => {
@@ -1308,7 +1725,8 @@ function recalc(){
       const remainOpt = optimize(nd, cards).pts;
       const total = c.pts + remainOpt;
       const oppCost = result.pts - total;
-      if (oppCost < bestOppCost || (oppCost === bestOppCost && (!bestChoice || c.pts > bestChoice.pts))){
+      const better = !bestChoice || (c.pts / c.energy > bestChoice.pts / bestChoice.energy) || (c.pts / c.energy === bestChoice.pts / bestChoice.energy && c.pts > bestChoice.pts);
+      if (oppCost < bestOppCost || (oppCost === bestOppCost && better)){
         bestOppCost = oppCost;
         bestChoice = c;
       }
@@ -1318,6 +1736,7 @@ function recalc(){
     $('safestText').textContent = bestOppCost <= 0
       ? `It is worth ${n(bestChoice.pts)} points and part of your best plan, so firing it now costs you nothing later.`
       : `It is worth ${n(bestChoice.pts)} points and costs about ${n(bestOppCost)} points of future flexibility, the lowest of any card you can cast right now.`;
+    setDock(bestChoice);
   }
 
   // 4. Energy burst
@@ -1331,7 +1750,7 @@ function recalc(){
     if (k > 0){
       const dmgBurst = (c.dmg || 0) * k;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><div class="dn">${esc(c.name)}</div></td><td class="num">${k}×</td><td class="num">${n(c.pts*k)}</td><td class="num">${n(dmgBurst)}</td><td class="num">${n(c.energy*k)}</td>`;
+      tr.innerHTML = `<td><div class="dn">${esc(c.name)}</div></td><td class="num">${k}×</td><td class="num">${n(c.pts*k)}</td><td class="num col-tight">${n(dmgBurst)}</td><td class="num">${n(c.energy*k)}</td>`;
       burstBody.appendChild(tr);
       burstEnergyTotal += c.energy*k;
       burstDmgTotal += dmgBurst;
@@ -1446,6 +1865,102 @@ buildCardEditor();
 renderBoosterRef();
 recalc();
 if (!setupDone) openSetup();
+
+// ---------- Glass: real edge refraction where the browser supports it (Chrome, Edge on desktop and Android) ----------
+// WebKit (Safari and every iPhone browser) ignores SVG filters in backdrop-filter, so those get the highlight-and-rim version only.
+const canRefract = !/iPhone|iPad|iPod|Macintosh.*Safari(?!.*Chrome)/.test(navigator.userAgent) && /Chrome|Edg/.test(navigator.userAgent)
+  && CSS.supports('backdrop-filter', 'url(#x)');
+function lensMap(w, h, r, bezel){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'), im = x.createImageData(w, h), d = im.data;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++){
+    const px = i + .5 - w / 2, py = j + .5 - h / 2;
+    const qx = Math.abs(px) - (w / 2 - r), qy = Math.abs(py) - (h / 2 - r);
+    const ox = Math.max(qx, 0), oy = Math.max(qy, 0), ol = Math.hypot(ox, oy);
+    let dist, gx, gy;
+    if (ol > 0){ dist = ol - r; gx = ox / ol * Math.sign(px); gy = oy / ol * Math.sign(py); }
+    else { dist = Math.max(qx, qy) - r; if (qx > qy){ gx = Math.sign(px); gy = 0; } else { gx = 0; gy = Math.sign(py); } }
+    const t = Math.max(0, Math.min(1, 1 + dist / bezel)), m = t * t, k = (j * w + i) * 4;
+    d[k] = 128 - gx * m * 127; d[k + 1] = 128 - gy * m * 127; d[k + 2] = 128; d[k + 3] = 255;
+  }
+  x.putImageData(im, 0, 0);
+  return c.toDataURL();
+}
+let lensSeq = 0;
+function applyLens(el){
+  const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+  if (!w || !h) return;
+  if (el._lens && el._lens.w === w && el._lens.h === h) return;
+  const id = el._lens ? el._lens.id : 'lens' + (++lensSeq);
+  const r = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, h / 2, w / 2);
+  const bezel = Number(el.dataset.lens) || 20;
+  const defs = $('lensDefs');
+  let f = document.getElementById(id);
+  if (!f){ f = document.createElementNS('http://www.w3.org/2000/svg', 'filter'); f.id = id; defs.appendChild(f); }
+  f.setAttribute('x', 0); f.setAttribute('y', 0); f.setAttribute('width', '100%'); f.setAttribute('height', '100%');
+  f.setAttribute('color-interpolation-filters', 'sRGB');
+  f.innerHTML = `<feImage href="${lensMap(w, h, r, bezel)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="map"/><feDisplacementMap in="SourceGraphic" in2="map" scale="${Math.round(bezel * 1.6)}" xChannelSelector="R" yChannelSelector="G"/>`;
+  el.style.setProperty('--lens', `url(#${id})`);
+  el._lens = { id, w, h };
+}
+if (canRefract){
+  document.documentElement.classList.add('refract');
+  const ro = new ResizeObserver(entries => entries.forEach(e => applyLens(e.target)));
+  document.querySelectorAll('[data-lens]').forEach(el => ro.observe(el));
+}
+
+// ---------- Undo after Fire ----------
+let undoSnapshot = null, toastTimer = 0;
+function showFiredToast(name, snapshot){
+  undoSnapshot = snapshot;
+  $('toastText').textContent = `Fired ${name}`;
+  const wrap = $('toastWrap');
+  wrap.hidden = false;
+  wrap.classList.remove('out'); void wrap.offsetWidth; wrap.classList.add('in');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 5000);
+}
+function hideToast(){
+  const wrap = $('toastWrap');
+  wrap.classList.remove('in'); wrap.classList.add('out');
+  setTimeout(() => { if (wrap.classList.contains('out')) wrap.hidden = true; }, 220);
+}
+$('undoBtn').addEventListener('click', () => {
+  if (!undoSnapshot) return;
+  Object.assign(depot, undoSnapshot);
+  ITEMS.forEach(i => { const inp = $('in-' + i); if (inp) inp.value = depot[i] || 0; });
+  undoSnapshot = null;
+  recalc();
+  hideToast();
+});
+
+// ---------- Column balance: the shorter column scrolls normally, then pins so it never leaves a dead gap ----------
+const wideLayout = window.matchMedia('(min-width: 861px)');
+function balanceColumns(){
+  const stacks = [...document.querySelectorAll('.layout > .stack')];
+  stacks.forEach(s => { s.style.position = ''; s.style.top = ''; });
+  if (!wideLayout.matches || stacks.length < 2) return;
+  const [a, b] = stacks.map(s => s.offsetHeight);
+  if (Math.abs(a - b) < 40) return;
+  const short = a < b ? stacks[0] : stacks[1];
+  const barSpace = 112;
+  short.style.position = 'sticky';
+  short.style.top = Math.min(barSpace, window.innerHeight - short.offsetHeight - 24) + 'px';
+}
+let balanceRaf = 0;
+const queueBalance = () => { cancelAnimationFrame(balanceRaf); balanceRaf = requestAnimationFrame(balanceColumns); };
+const balanceObserver = new ResizeObserver(queueBalance);
+document.querySelectorAll('.layout > .stack').forEach(s => balanceObserver.observe(s));
+window.addEventListener('resize', queueBalance);
+wideLayout.addEventListener('change', queueBalance);
+
+// ---------- Nav and footer links open their section and scroll to it ----------
+document.querySelectorAll('[data-open]').forEach(btn => btn.addEventListener('click', () => {
+  const target = $(btn.dataset.open);
+  if (!target) return;
+  target.open = true;
+  target.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' });
+}));
 </script>
 </body>
 </html>
