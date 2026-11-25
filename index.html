@@ -2,886 +2,512 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Club Wars — Attack Optimizer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>War Room · Club Wars attack optimizer</title>
+<meta name="description" content="Enter your war items and get the Club Wars attack plan that earns the most points.">
+<meta name="theme-color" content="#000000">
 <style>
+  /* Apple-style dark theme. Black first, one warm accent, colour only where it carries meaning. */
   :root{
-    --bg: #12151a;
-    --panel: #1a1f26;
-    --panel-raised: #212a33;
-    --border: #2c3440;
-    --text: #eef1f5;
-    --muted: #8b96a3;
-    --damage: #ff6b45;
-    --energy: #3ac6e0;
-    --points: #f4b731;
-    --good: #52c77e;
-    --bottleneck: #ff5577;
-    --violet: #a78bfa;
+    color-scheme: dark;
+    --bg: #000;
+    --card-top: #19191b;
+    --card-bot: #131315;
+    --fill: #2c2c2f;
+    --fill-hover: #3a3a3e;
+    --sep: rgba(255,255,255,.09);
+    --ring: rgba(255,255,255,.07);
+    --text: #f5f5f7;
+    --text-secondary: #9a9aa2;
+    --pts: #ffc20a;
+    --pts-2: #ff8a00;
+    --dmg: #ff5b4d;
+    --energy: #4fd1c5;
+    --good: #32d74b;
+    --warning: #ffd60a;
+    --fire-1: #f4693f;
+    --fire-2: #dc3b35;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-9: 56px; --space-10: 80px;
+    --ease: cubic-bezier(.2,.8,.2,1);
   }
   *{ box-sizing: border-box; }
-  html,body{
-    margin:0; padding:0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    line-height: 1.5;
+  html{ background: var(--bg); -webkit-text-size-adjust: 100%; }
+  body{
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: 15px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
   }
-  h1,h2,h3, .display{
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    margin: 0;
-  }
-  .wrap{
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 28px 20px 80px;
-  }
-  header.top{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
-    align-items: flex-end;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    padding: 14px 20px 18px;
-    margin: 0 -20px 24px;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--bg);
-    box-shadow: 0 8px 16px -8px rgba(0,0,0,0.5);
-  }
-  header.top h1{
-    font-size: 30px;
-    color: var(--text);
-  }
-  header.top .sub{
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 4px;
-  }
-  .ribbon{
-    display: flex;
-    gap: 22px;
-    flex-wrap: wrap;
-  }
-  .stat{
-    text-align: right;
-  }
-  .stat .n{
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .stat .l{
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-top: 2px;
-  }
-  .stat.points .n{ color: var(--points); }
-  .stat.energy .n{ color: var(--energy); }
-  .stat.attacks .n{ color: var(--text); }
-  .stat.damage .n{ color: var(--damage); }
+  :focus-visible{ outline: 2px solid var(--text); outline-offset: 2px; border-radius: 8px; }
+  button{ font-family: inherit; }
+  .vh{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .page{ max-width: 1120px; margin: 0 auto; padding: 0 var(--space-6) var(--space-10); }
+  .ico{ width: 16px; height: 16px; flex: none; }
+  .ico-stroke{ fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 
-  .grid{
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 22px;
+  /* Masthead and pinned totals */
+  .masthead{ padding-block: 44px 24px; }
+  .brand{ font-size: 40px; line-height: 1.05; font-weight: 700; letter-spacing: -.03em; margin: 0; }
+  .tagline{ color: var(--text-secondary); font-size: 17px; margin: var(--space-2) 0 0; max-width: 52ch; }
+  .metrics{ position: sticky; top: 12px; z-index: 20; padding: 0 var(--space-6); pointer-events: none; }
+  .metrics-in{
+    pointer-events: auto;
+    max-width: 1072px; margin: 0 auto; padding: 12px 28px;
+    display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 48px; align-items: end;
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+    -webkit-backdrop-filter: blur(28px) saturate(190%); backdrop-filter: blur(28px) saturate(190%);
+    border-radius: 28px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.13), inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.55);
   }
-  @media (max-width: 860px){
-    .grid{ grid-template-columns: 1fr; }
-  }
+  .metric{ display: flex; flex-direction: column; min-width: 0; }
+  .mv{ font-size: 28px; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .ml{ font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .metric.hero .mv{ font-size: 40px; font-weight: 700; letter-spacing: -.03em; background: linear-gradient(180deg, #ffcb3d, #ffa51f); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+  .metrics-in .metric:nth-child(2) .mv{ color: var(--energy); }
+  .metrics-in .metric:nth-child(3) .mv{ color: var(--dmg); }
 
-  .panel{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
+  /* Layout */
+  .layout{ display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: var(--space-5); margin-top: var(--space-5); align-items: start; }
+  .stack{ display: grid; gap: var(--space-5); min-width: 0; }
+  
+  .panel, details.disc, .sec{
+    background: linear-gradient(180deg, var(--card-top), var(--card-bot));
+    box-shadow: inset 0 0 0 1px var(--ring), inset 0 1px 0 rgba(255,255,255,.05);
+    border-radius: 22px;
   }
-  .panel h2{
-    font-size: 18px;
-    margin-bottom: 4px;
-  }
-  .panel-head-row{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-  .panel-head-row h2{ margin-bottom: 0; }
-  .sort-btn{
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 6px;
-    padding: 5px 10px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11.5px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .sort-btn:hover{ border-color: var(--energy); color: var(--energy); }
-  .panel .desc{
-    color: var(--muted);
-    font-size: 12.5px;
-    margin-bottom: 14px;
-  }
+  .panel{ padding: var(--space-6); }
+  .ph{ font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+  .hint{ color: var(--text-secondary); font-size: 13px; margin: var(--space-2) 0 var(--space-4); max-width: 62ch; }
+  .head-row{ display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+  .mono{ font-family: var(--mono); font-size: 12px; }
 
-  .item-row{
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
+  /* Controls */
+  .btn{
+    height: 34px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+    background: var(--fill); color: var(--text); border: 0; border-radius: 999px;
+    font-size: 14px; font-weight: 500; white-space: nowrap; cursor: pointer;
+    transition: background-color 160ms var(--ease), transform 160ms var(--ease);
   }
-  .item-row:last-child{ border-bottom: none; }
-  .item-row label{
-    font-size: 13.5px;
+  .btn:hover{ background: var(--fill-hover); }
+  .btn:active{ transform: scale(.97); }
+  .btn-primary{ background: #fff; color: #000; font-weight: 600; }
+  .btn-primary:hover{ background: #e6e6e8; }
+  .btn-block{ width: 100%; }
+  .fire-btn{ background: linear-gradient(180deg, var(--fire-1), var(--fire-2)); color: #fff; font-weight: 600; box-shadow: 0 1px 0 rgba(255,255,255,.25) inset; }
+  .fire-btn:hover{ background: linear-gradient(180deg, #ff7448, #e6443d); }
+  .btn-text{ background: none; border: 0; padding: 0; color: var(--text); opacity: .85; font-size: inherit; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(255,255,255,.35); text-underline-offset: 3px; cursor: pointer; }
+  .btn-text:hover{ opacity: 1; text-decoration-color: currentColor; }
+  .icon-btn{
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--fill); color: var(--text-secondary); border: 0; border-radius: 999px; cursor: pointer;
+    transition: background-color 160ms var(--ease), color 160ms var(--ease);
   }
-  .stepper{
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  .icon-btn:hover{ background: var(--fill-hover); color: var(--dmg); }
+  .field{
+    height: 34px; width: 100%; padding: 0 12px;
+    background: var(--fill); color: var(--text); border: 0; border-radius: 10px;
+    font-family: var(--font); font-size: 14px; font-variant-numeric: tabular-nums;
   }
-  .stepper button{
-    width: 26px; height: 26px;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    font-size: 15px;
-    cursor: pointer;
-    line-height: 1;
-  }
-  .stepper button:hover{ border-color: var(--energy); color: var(--energy); }
-  .stepper input{
-    width: 52px;
-    text-align: center;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
-    padding: 5px 2px;
-  }
-  .item-row.full input{ border-color: var(--energy); color: var(--energy); }
-  .item-row.spare input{ border-color: var(--good); color: var(--good); }
+  .field:focus{ outline: 2px solid rgba(255,255,255,.55); outline-offset: 0; }
+  .field.num{ text-align: center; padding: 0 4px; }
+  input[type=number]{ -moz-appearance: textfield; appearance: textfield; }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button{ -webkit-appearance: none; margin: 0; }
+  input[type=checkbox]{ width: 20px; height: 20px; margin: 0; accent-color: var(--pts-2); cursor: pointer; flex: none; }
 
-  table{
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  th, td{
-    text-align: left;
-    padding: 7px 8px;
-    border-bottom: 1px solid var(--border);
-  }
-  th{
-    color: var(--muted);
-    font-weight: 500;
-    text-transform: uppercase;
-    font-size: 10.5px;
-    letter-spacing: 0.06em;
-  }
-  td.num, th.num{ text-align: right; font-variant-numeric: tabular-nums; }
-  tr.jackpot td{ background: rgba(244,183,49,0.08); }
+  /* Depot */
+  .item-row{ display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: 9px 0; border-bottom: 1px solid var(--sep); }
+  .item-row:last-child{ border-bottom: 0; }
+  .iname{ display: flex; flex-direction: column; min-width: 0; }
+  .iname label{ font-size: 15px; font-weight: 500; }
+  .inote{ font-size: 12px; color: var(--text-secondary); min-height: 1.4em; }
+  .stepper{ display: flex; align-items: center; background: var(--fill); border-radius: 999px; padding: 2px; }
+  .step-btn{ width: 30px; height: 30px; background: transparent; color: var(--text); border: 0; border-radius: 999px; font-size: 18px; line-height: 1; cursor: pointer; transition: background-color 160ms var(--ease); }
+  .step-btn:hover{ background: var(--fill-hover); }
+  .step-btn:active{ transform: scale(.92); }
+  .stepper .field{ width: 46px; height: 30px; padding: 0; background: transparent; text-align: center; font-weight: 600; font-size: 15px; border-radius: 8px; }
+  .stepper .field:focus{ outline-offset: -2px; }
 
-  .narrow-cards{ display: none; }
-  .plan-card{
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    margin-bottom: 10px;
-  }
-  .plan-card .pc-head{
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-  .plan-card .pc-name{
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-  }
-  .plan-card .pc-casts{
-    color: var(--energy);
-    font-size: 13px;
-    font-family: 'IBM Plex Mono', monospace;
-    white-space: nowrap;
-  }
-  .plan-card .pc-stats{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 14px;
-    font-size: 12.5px;
-    color: var(--muted);
-    margin-bottom: 12px;
-  }
-  .plan-card .pc-stats strong{ color: var(--text); font-weight: 600; }
-  .plan-card .fire-btn{ width: 100%; padding: 8px 10px; font-size: 13px; }
+  /* Tables */
+  table{ width: 100%; border-collapse: collapse; font-size: 14px; }
+  th{ text-align: start; font-weight: 500; font-size: 12px; color: var(--text-secondary); padding: 8px 10px; border-bottom: 1px solid var(--sep); }
+  th:first-child, td:first-child{ padding-inline-start: 0; }
+  th:last-child, td:last-child{ padding-inline-end: 0; }
+  td{ padding: 12px 10px; border-bottom: 1px solid var(--sep); vertical-align: middle; }
+  tbody tr:last-child td{ border-bottom: 0; }
+  th.num, td.num{ text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .act{ width: 1%; text-align: end; white-space: nowrap; }
+  .dn{ font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .dm{ font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .only-sm{ display: none; }
+  #planBody td:nth-child(3), #burstBody td:nth-child(3){ color: var(--pts); font-weight: 600; }
+  #planBody td:nth-child(4), #burstBody td:nth-child(4){ color: var(--dmg); }
+  #planBody td:nth-child(5), #burstBody td:nth-child(5){ color: var(--energy); }
 
-  /* Card layout whenever the results column is too narrow for a 9-column table:
-     phones, and the two-column desktop layout between 861px and 1000px wide. */
-  @media (max-width: 640px), (min-width: 861px) and (max-width: 1000px){
-    .wide-table{ display: none; }
-    .narrow-cards{ display: block; }
-  }
-  .tag{
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: var(--panel-raised);
-    color: var(--points);
-    border: 1px solid rgba(244,183,49,0.4);
-  }
+  /* Notes and status */
+  .note-row{ display: flex; align-items: flex-start; gap: var(--space-2); color: var(--text-secondary); font-size: 13px; padding: var(--space-3) 0 0; }
+  .note-row .ico{ margin-top: 2px; }
+  .status{ display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+  .status.warn{ color: var(--dmg); }
 
-  .fire-btn{
-    background: rgba(255,107,69,0.12);
-    border: 1px solid var(--damage);
-    color: var(--damage);
-    border-radius: 6px;
-    padding: 5px 10px;
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 0.03em;
-    cursor: pointer;
-    width: 100%;
-  }
-  .fire-btn:hover{ background: var(--damage); color: #1a0a06; }
-  .fire-btn:active{ transform: scale(0.97); }
+  /* Next-move cards */
+  #extrasPanel{ background: none; box-shadow: none; padding: 0; border-radius: 0; }
+  #extrasPanel[style*="block"]{ display: flex !important; flex-direction: column; gap: var(--space-5); }
+  .sec{ padding: var(--space-6); }
+  .sk{ font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+  .sh{ font-size: 20px; line-height: 1.25; font-weight: 600; letter-spacing: -.02em; margin: 0; }
+  .sec p{ margin: var(--space-2) 0 0; font-size: 14px; color: var(--text-secondary); max-width: 62ch; }
+  #safestCallout{ background: linear-gradient(135deg, rgba(255,159,10,.12), rgba(229,36,46,.06) 75%), linear-gradient(180deg, var(--card-top), var(--card-bot)); }
+  #safestCallout .sk{ color: var(--pts); }
+  #bottleneckCallout{ background: linear-gradient(180deg, rgba(255,69,58,.08), rgba(255,69,58,.015)), linear-gradient(180deg, var(--card-top), var(--card-bot)); }
+  .plain-list{ list-style: none; margin: var(--space-3) 0 0; padding: 0; }
+  .plain-list li{ display: flex; justify-content: space-between; gap: var(--space-3); padding: 9px 0; border-bottom: 1px solid var(--sep); font-size: 14px; }
+  .plain-list li:last-child{ border-bottom: 0; padding-bottom: 0; }
+  .qty{ color: var(--good); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .chase-table{ margin-top: var(--space-3); }
+  .gain{ color: var(--good); font-weight: 600; }
 
-  .callout{
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--good);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-top: 16px;
-    font-size: 13.5px;
-  }
-  .callout .head{
-    font-family:'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--good);
-    margin-bottom: 4px;
-  }
-  .callout.warn{ border-left-color: var(--bottleneck); }
-  .callout.warn .head{ color: var(--bottleneck); }
-  .callout.info{ border-left-color: var(--energy); }
-  .callout.info .head{ color: var(--energy); }
-  .callout.chase{ border-left-color: var(--points); }
-  .callout.chase .head{ color: var(--points); }
-  .chase-table{ margin-top: 10px; }
-  .chase-table td.gain{ color: var(--points); font-weight: 600; }
-  .chase-table td.none{ color: var(--muted); }
-  .chase-note{ margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+  /* Disclosure sections */
 
-  .give-list{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .give-chip{
-    background: var(--panel-raised);
-    border: 1px solid var(--good);
-    color: var(--good);
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 12.5px;
-  }
-  .give-chip.tight{
-    border-color: var(--bottleneck);
-    color: var(--bottleneck);
-  }
+  details.disc > summary{ list-style: none; display: flex; align-items: center; gap: var(--space-3); min-height: 60px; padding: var(--space-3) var(--space-6); font-size: 18px; font-weight: 600; letter-spacing: -.01em; cursor: pointer; }
+  details.disc > summary::-webkit-details-marker{ display: none; }
+  details.disc > summary .chev{ width: 16px; height: 16px; color: var(--text-secondary); transition: transform 200ms var(--ease); }
+  details.disc[open] > summary .chev{ transform: rotate(90deg); }
+  .disc-body{ padding: 0 var(--space-6) var(--space-6); }
+  .howto h4{ font-size: 15px; font-weight: 600; margin: var(--space-5) 0 var(--space-1); }
+  .howto h4:first-child{ margin-top: 0; }
+  .how-grid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-7); }
+  .howto ol, .howto ul{ margin: var(--space-2) 0 0; padding-inline-start: var(--space-5); }
+  .howto li{ margin: var(--space-2) 0; font-size: 14px; color: var(--text-secondary); }
+  .howto li b{ color: var(--text); font-weight: 600; }
+  .inline-field{ display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin: var(--space-3) 0 var(--space-5); }
+  .inline-field label{ font-size: 14px; font-weight: 500; }
+  .inline-field .field{ width: 72px; text-align: center; }
+  .inline-field .tip{ font-size: 13px; color: var(--text-secondary); }
 
-  details{
-    margin-top: 22px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
-  }
-  summary{
-    cursor: pointer;
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-    color: var(--text);
-  }
-  summary::marker{ color: var(--energy); }
-  details.howto{ margin-top: 14px; }
-  details.howto ol, details.howto ul{ margin: 10px 0 0 20px; padding: 0; }
-  details.howto li{ margin: 6px 0; font-size: 13px; line-height: 1.5; }
-  details.howto li b{ color: var(--text); }
-  details.howto .hnote{ margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
-  details.howto h4{ margin: 16px 0 0; font-family: 'Rajdhani', sans-serif; font-size: 14px; color: var(--energy); letter-spacing: .04em; }
-  .card-editor{
-    margin-top: 14px;
-    display: grid;
-    gap: 8px;
-  }
-  .card-row{
-    display: grid;
-    grid-template-columns: 170px 1fr 70px 70px 70px 26px;
-    gap: 8px;
-    align-items: center;
-    font-size: 12px;
-  }
-  .card-row .name{ color: var(--muted); }
-  .card-row .namecell{ display: flex; align-items: center; gap: 6px; min-width: 0; }
-  .card-row .namecell .own-chk{ flex: none; width: 17px; height: 17px; accent-color: var(--energy); cursor: pointer; margin: 0; }
-  .card-row.locked .name-input,
-  .card-row.locked .recipe-btn,
-  .card-row.locked input.small{ opacity: .5; }
-  .card-row input.name-input{
-    width: 100%;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 5px 7px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-  }
-  .card-row .del-btn{
-    width: 24px; height: 24px;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--bottleneck);
-    border-radius: 6px;
-    font-size: 13px;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .card-row .del-btn:hover{ border-color: var(--bottleneck); }
-  .add-card-btn{
-    margin-top: 12px;
-    background: var(--panel-raised);
-    border: 1px dashed var(--border);
-    color: var(--energy);
-    border-radius: 8px;
-    padding: 9px 14px;
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 600;
-    font-size: 13.5px;
-    cursor: pointer;
-    width: 100%;
-  }
-  .add-card-btn:hover{ border-color: var(--energy); }
-  .card-row input.recipe{
-    width: 100%;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 5px 7px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-  }
-  .card-row input.small{
-    width: 100%;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 5px 4px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    text-align: center;
-  }
-  .card-editor-head{
-    display: grid;
-    grid-template-columns: 170px 1fr 70px 70px 70px 26px;
-    gap: 8px;
-    font-size: 10.5px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
-  }
+  /* Card editor */
+  .card-editor-head, .card-row{ display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr) 72px 72px 72px 34px; gap: var(--space-2); align-items: center; }
+  .card-editor-head{ font-size: 12px; color: var(--text-secondary); margin: var(--space-4) 0 var(--space-1); }
+  .card-editor{ display: grid; gap: var(--space-2); }
+  .card-row .namecell{ display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+  .card-row.locked .field{ color: var(--text-secondary); }
+  .recipe-btn{ width: 100%; height: 34px; padding: 0 12px; text-align: start; background: var(--fill); color: var(--text); border: 0; border-radius: 10px; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recipe-btn:hover{ background: var(--fill-hover); }
+  .recipe-btn.empty{ color: var(--text-secondary); }
   .card-row label.mini{ display: block; min-width: 0; }
   .card-row label.mini span{ display: none; }
+  .add-row{ margin-top: var(--space-4); }
 
-  /* Phones: stack each card's editor so nothing gets squeezed, and label the number boxes */
-  @media (max-width: 640px){
-    .card-editor-head{ display: none; }
-    .card-editor{ gap: 14px; }
-    .card-row{
-      grid-template-columns: 1fr 1fr 1fr 34px;
-      gap: 8px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--border);
-    }
-    .card-row:last-child{ border-bottom: none; padding-bottom: 0; }
-    .card-row .namecell,
-    .card-row .recipe-btn{ grid-column: 1 / -1; }
-    .card-row label.mini span{
-      display: block;
-      font-size: 10px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 3px;
-    }
-    .card-row .del-btn{ align-self: end; width: 34px; height: 30px; }
-  }
+  /* Boosters and Jackpot windows */
+  .booster{ padding: var(--space-3) 0; border-bottom: 1px solid var(--sep); max-width: 66ch; }
+  .booster:last-child{ border-bottom: 0; }
+  .booster .bname{ display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); font-weight: 600; }
+  .booster .blevels{ font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+  .booster .beffect{ font-size: 14px; margin-top: 2px; }
+  .booster .btip{ font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .jp-window{ padding: var(--space-3) 0; border-top: 1px solid var(--sep); font-size: 14px; }
+  .jp-window .jhead{ font-weight: 600; font-size: 15px; color: var(--pts); }
+  .jp-window .jmeta{ font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .booster-ref{ margin-top: var(--space-5); }
 
-  .burst-box{
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-  }
-  .burst-box label{ font-size: 13px; color: var(--muted); }
-  .burst-box input{
-    width: 70px;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-family: 'IBM Plex Mono', monospace;
-  }
+  /* Footer */
+  footer{ margin-top: var(--space-9); color: var(--text-secondary); font-size: 13px; }
+  footer p{ margin: var(--space-1) 0; }
+  footer .who{ color: var(--text); }
+  .code-btn{ background: var(--fill); color: var(--text); border: 0; border-radius: 6px; padding: 1px 8px; font-family: var(--mono); font-size: 12px; letter-spacing: .05em; cursor: pointer; user-select: all; -webkit-user-select: all; }
+  .code-btn:hover{ background: var(--fill-hover); }
+  .footer-links{ display: flex; gap: var(--space-5); flex-wrap: wrap; margin: var(--space-3) 0; }
+  .fine{ font-size: 12px; }
 
-  footer{
-    margin-top: 30px;
-    color: var(--muted);
-    font-size: 11.5px;
-    text-align: center;
-  }
-  .reset-link{
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 11px;
-    text-decoration: underline;
-    cursor: pointer;
-    font-family: 'IBM Plex Mono', monospace;
-    padding: 0;
-  }
-  .reset-link:hover{ color: var(--bottleneck); }
-
-  .booster-ref{
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 10px;
-  }
-  .booster-card{
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-  }
-  .booster-card .bname{
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .booster-card .blevels{
-    font-size: 10px;
-    color: var(--muted);
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 6px;
-  }
-  .booster-card .beffect{
-    font-size: 12.5px;
-    color: var(--text);
-    margin-top: 6px;
-  }
-  .booster-card .btip{
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 6px;
-    font-style: italic;
-  }
-  .booster-card.highlight{ border-color: var(--violet); }
-  .booster-card.highlight .bname{ color: var(--violet); }
-
-  .jp-window{
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--violet);
-    border-radius: 8px;
-    padding: 12px 14px;
-    margin-top: 12px;
-  }
-  .jp-window .jhead{
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--violet);
-    margin-bottom: 8px;
-  }
-  .jp-window .jtotal{
-    margin-top: 8px;
-    font-size: 13px;
-  }
-  .jp-window .jtotal .x2{
-    color: var(--violet);
-    font-weight: 600;
-  }
-  .jp-empty{
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 10px;
-  }
-  .modal-overlay{
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .modal-overlay.open{ display: flex; }
+  /* Dialogs */
+  .modal-overlay{ display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.5); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: var(--space-4); }
+  .modal-overlay.open{ display: flex; animation: fadeIn 200ms var(--ease); }
   .modal-box{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    max-width: 480px;
-    width: 100%;
-    max-height: 85vh;
-    overflow-y: auto;
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.05)), rgba(24,24,27,.72);
+    -webkit-backdrop-filter: blur(40px) saturate(180%); backdrop-filter: blur(40px) saturate(180%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.25), 0 30px 80px rgba(0,0,0,.7);
+    border-radius: 26px; width: 100%; max-width: 520px; max-height: 88vh; display: flex; flex-direction: column;
+    animation: dialogIn 260ms var(--ease);
   }
-  .modal-box h3{
-    font-size: 19px;
-    margin-bottom: 4px;
-  }
-  .modal-box .desc{ margin-bottom: 16px; }
-  .recipe-grid{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .recipe-item{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 10px;
-  }
-  .recipe-item label{ font-size: 12.5px; }
-  .recipe-item input{
-    width: 48px;
-    text-align: center;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    padding: 4px 2px;
-  }
-  .modal-actions{
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 18px;
-  }
-  .modal-actions button{
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 600;
-    font-size: 14px;
-    border-radius: 7px;
-    padding: 9px 18px;
-    cursor: pointer;
-    border: 1px solid var(--border);
-  }
-  .modal-actions .btn-cancel{ background: var(--panel-raised); color: var(--muted); }
-  .modal-actions .btn-save{ background: var(--energy); color: #0a1418; border-color: var(--energy); }
-  .card-row .recipe-btn{
-    width: 100%;
-    text-align: left;
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 5px 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11.5px;
-    cursor: pointer;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .card-row .recipe-btn:hover{ border-color: var(--energy); }
-  .card-row .recipe-btn.empty{ color: var(--muted); font-style: italic; }
+  .modal-head{ padding: var(--space-6) var(--space-6) 0; }
+  .modal-head h3{ font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -.02em; margin: 0; }
+  .modal-scroll{ padding: 0 var(--space-6); overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+  .modal-actions{ display: flex; justify-content: flex-end; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--sep); }
+  @keyframes fadeIn{ from{ opacity: 0; } to{ opacity: 1; } }
+  @keyframes dialogIn{ from{ opacity: 0; transform: scale(.96) translateY(8px); } to{ opacity: 1; transform: none; } }
+  .recipe-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-5); margin: var(--space-4) 0; }
+  .recipe-item{ display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .recipe-item label{ font-size: 14px; }
+  .recipe-item .field{ width: 56px; text-align: center; }
+  .setup-bank{ display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin: var(--space-4) 0 var(--space-2); font-size: 14px; font-weight: 500; }
+  .setup-bank .field{ width: 72px; text-align: center; }
+  .setup-tools{ display: flex; gap: var(--space-5); margin: var(--space-3) 0 var(--space-1); font-size: 14px; }
+  .setup-group{ font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: var(--space-5) 0 var(--space-1); }
+  .setup-row{ display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: var(--space-3); align-items: center; padding: 10px 0; border-bottom: 1px solid var(--sep); }
+  .setup-row label.own{ display: flex; gap: var(--space-3); align-items: flex-start; cursor: pointer; min-width: 0; }
+  .setup-row label.own input{ margin-top: 2px; }
+  .sinfo{ display: flex; flex-direction: column; min-width: 0; }
+  .sname{ font-weight: 600; }
+  .smeta{ font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .snote{ display: flex; gap: var(--space-2); align-items: flex-start; font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .snote .ico{ margin-top: 1px; }
+  .setup-row.off .sname{ color: var(--text-secondary); }
+  .spts{ font-size: 12px; color: var(--text-secondary); }
+  .spts .field{ margin-top: 4px; text-align: center; }
 
-  /* About line + first-run setup */
-  .about{ margin-top: 4px; line-height: 1.7; }
-  .about .city{ color: var(--text); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; }
-  .code-btn{
-    background: var(--panel-raised);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 1px;
-    cursor: pointer;
-    user-select: all;
-    -webkit-user-select: all;
+  @media (max-width: 860px){
+    .layout{ grid-template-columns: minmax(0, 1fr); }
+    .layout > .side{ display: contents; }
+    #depotPanel{ order: 1; }
+    .layout > .stack:not(.side){ order: 2; }
+    #chasePanel{ order: 3; }
+    .how-grid{ grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .how-col + .how-col{ margin-top: var(--space-5); }
   }
-  .code-btn:hover{ border-color: var(--energy); }
-  .footer-links{ margin-top: 10px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .fine{ margin-top: 8px; font-size: 10.5px; opacity: .8; }
+  @media (max-width: 640px){
+    .page{ padding-inline: var(--space-4); }
+    .metrics{ padding: 0 var(--space-3); top: 8px; }
+    .metrics-in{ padding: 10px var(--space-4); gap: var(--space-3); grid-template-columns: repeat(4, auto); justify-content: space-between; border-radius: 22px; }
+    .mv{ font-size: 20px; }
+    .metric.hero .mv{ font-size: 28px; }
+    .brand{ font-size: 34px; }
+    .tagline{ font-size: 15px; }
+    .masthead{ padding-block: 28px 16px; }
+    .panel, .sec{ padding: var(--space-5); border-radius: 20px; }
+    details.disc > summary{ padding-inline: var(--space-5); }
+    .disc-body{ padding-inline: var(--space-5); padding-bottom: var(--space-5); }
+    .col-opt{ display: none; }
+    .only-sm{ display: block; }
+    .card-editor-head{ display: none; }
+    .card-editor{ gap: var(--space-4); }
+    .card-row{ grid-template-columns: 1fr 1fr 1fr 34px; padding-bottom: var(--space-4); border-bottom: 1px solid var(--sep); }
+    .card-row:last-child{ border-bottom: 0; padding-bottom: 0; }
+    .card-row .namecell, .card-row .recipe-btn{ grid-column: 1 / -1; }
+    .card-row label.mini span{ display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .card-row .icon-btn{ align-self: end; }
+    .modal-head{ padding: var(--space-5) var(--space-5) 0; }
+    .modal-scroll{ padding-inline: var(--space-5); }
+    .modal-actions{ padding: var(--space-3) var(--space-5); }
+  }
+  @media (max-width: 380px){
+    .metrics-in{ gap: var(--space-2); }
+    .mv{ font-size: 18px; }
+    .metric.hero .mv{ font-size: 24px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .modal-overlay.open, .modal-box{ animation: fadeIn 1ms linear; }
+    details.disc > summary .chev, .btn, .icon-btn, .step-btn{ transition: none; }
+    .btn:active, .step-btn:active{ transform: none; }
+  }
 
-  .setup-box{ max-width: 520px; }
-  .setup-bank{
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    background: var(--panel-raised); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px;
-  }
-  .setup-tools{ display: flex; gap: 14px; margin-bottom: 8px; font-size: 12.5px; align-items: center; }
-  .setup-group{
-    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: .08em;
-    text-transform: uppercase; color: var(--muted); margin: 12px 0 5px;
-  }
-  .setup-row{
-    display: grid; grid-template-columns: 1fr 84px; gap: 10px; align-items: center;
-    border: 1px solid var(--border); background: var(--panel-raised);
-    border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;
-  }
-  .setup-row.off .sinfo{ opacity: .55; }
-  .setup-row label.own{ display: flex; gap: 9px; align-items: flex-start; cursor: pointer; min-width: 0; }
-  .setup-row label.own input{ flex: none; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--energy); }
-  .setup-row .sname{ font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 15px; line-height: 1.2; }
-  .setup-row .smeta{ font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .setup-row .snote{ font-size: 11px; color: var(--bottleneck); margin-top: 3px; }
-  .setup-row .spts{ font-size: 10.5px; color: var(--muted); }
-  .setup-row .spts input{
-    display: block; width: 100%; margin-top: 2px;
-    background: var(--bg); border: 1px solid var(--border); color: var(--text);
-    border-radius: 6px; padding: 6px 4px; text-align: center;
-    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
-  }
-  .setup-bank input{
-    display: block; width: 64px;
-    background: var(--bg); border: 1px solid var(--border); color: var(--text);
-    border-radius: 6px; padding: 6px 4px; text-align: center;
-    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
-  }
-  .setup-link{
-    background: none; border: none; color: var(--energy); text-decoration: underline;
-    cursor: pointer; font-family: inherit; font-size: inherit; padding: 0;
-  }
+  main > details.disc{ margin-top: var(--space-5); }
+  .stack > details.disc{ margin: 0; }
+
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header class="top">
-    <div>
-      <h1>War Room</h1>
-      <div class="sub">Club Wars attack optimizer — enter your depot, get the mathematically best attack sequence</div>
-    </div>
-    <div class="ribbon">
-      <div class="stat points"><div class="n" id="totalPts">0</div><div class="l">War Points</div></div>
-      <div class="stat energy"><div class="n" id="totalEnergy">0</div><div class="l">Energy Used</div></div>
-      <div class="stat attacks"><div class="n" id="totalAttacks">0</div><div class="l">Attacks</div></div>
-      <div class="stat damage"><div class="n" id="totalDamage">0</div><div class="l">Damage</div></div>
-    </div>
-  </header>
+<header class="page masthead">
+  <h1 class="brand">War Room</h1>
+  <p class="tagline">Enter your war items. Get the Club Wars attack plan that earns the most points.</p>
+</header>
 
-  <details class="howto" id="howTo">
-    <summary>How to use this tool</summary>
-    <h4>Quick start</h4>
-    <ol>
-      <li><b>Pick your cards.</b> Open <i>Disaster card settings</i> (or the quick card setup), tick the cards you have unlocked, and enter the war points each one shows in-game. The plan only uses ticked cards.</li>
-      <li><b>Enter your depot.</b> Type your war items or use + and −. The plan updates as you type.</li>
-      <li><b>Read the plan.</b> <i>Optimal Attack Plan</i> is the best use of everything you have, sorted by points per energy. If you might get interrupted, fire from the top down.</li>
-      <li><b>Hit "Fire ×1"</b> after each attack you cast in the game. The items are taken out of your depot and the plan recalculates.</li>
-    </ol>
-    <h4>The extras</h4>
-    <ul>
-      <li><b>Safest attack to fire right now:</b> the cast that costs your total plan the least, if you need to attack before you're ready.</li>
-      <li><b>Safe to give teammates:</b> items left over after the best plan, so giving them away costs you nothing.</li>
-      <li><b>Bottleneck items:</b> items stuck at zero that are blocking cards.</li>
-      <li><b>Best items to chase:</b> which items would add the most points if you got more of them.</li>
-      <li><b>Energy-bank burst planner:</b> the best attacks to fit inside one energy bank. Enter your bank size, and set your Jackpot boosters under <i>Battle boosters</i> to line up the biggest hits for the Jackpot window.</li>
-    </ul>
-    <h4>Good to know</h4>
-    <ul>
-      <li><b>Points depend on card level.</b> When a card levels up, update its points in <i>Disaster card settings</i>. The plan is only as accurate as those numbers.</li>
-      <li><b>Your data stays on your device.</b> Items and settings are saved in this browser only. Your phone and laptop won't share them, and clearing browser data wipes them.</li>
-      <li><b>Cards missing or wrong?</b> You can edit recipes, damage and energy, or add a new disaster, at the bottom of <i>Disaster card settings</i>.</li>
-    </ul>
+<div class="metrics">
+  <div class="metrics-in">
+    <div class="metric hero"><div class="mv" id="totalPts">0</div><div class="ml">War points</div></div>
+    <div class="metric"><div class="mv" id="totalEnergy">0</div><div class="ml">Energy</div></div>
+    <div class="metric"><div class="mv" id="totalDamage">0</div><div class="ml">Damage</div></div>
+    <div class="metric"><div class="mv" id="totalAttacks">0</div><div class="ml">Attacks</div></div>
+  </div>
+</div>
+
+<main class="page">
+
+  <details class="disc howto" id="howTo" style="margin-top: var(--space-5);">
+    <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>How to use this tool</summary>
+    <div class="disc-body how-grid">
+        <div class="how-col"><h4>Quick start</h4>
+      <ol>
+        <li><b>Pick your cards.</b> Open Disaster card settings (or run the quick setup), tick the cards you have unlocked, and enter the war points each one shows in game. The plan only uses ticked cards.</li>
+        <li><b>Enter your depot.</b> Type your war items or use the plus and minus buttons. The plan updates as you type.</li>
+        <li><b>Read the plan.</b> It is sorted by points per energy, so if you might get interrupted, fire from the top down.</li>
+        <li><b>Press Fire after each attack</b> you cast in the game. The items come out of your depot and the plan recalculates.</li>
+      </ol></div>
+        <div class="how-col"><h4>What else it shows</h4>
+      <ul>
+        <li><b>Fire next:</b> the cast that costs your total plan the least, if you need to attack before you are ready.</li>
+        <li><b>Spare items:</b> what is left after the best plan, so giving it away costs you nothing.</li>
+        <li><b>Blocked cards:</b> items at zero that stop cards from being cast.</li>
+        <li><b>Items to chase:</b> which items would add the most points if you got more of them.</li>
+        <li><b>Burst planner:</b> the best attacks to fit inside one energy bank. Set your Jackpot boosters under Battle boosters to line up the biggest hits for the Jackpot window.</li>
+      </ul></div>
+        <div class="how-col"><h4>Good to know</h4>
+      <ul>
+        <li><b>Points depend on card level.</b> When a card levels up, update its points in Disaster card settings. The plan is only as accurate as those numbers.</li>
+        <li><b>Your data stays on your device.</b> Items and settings are saved in this browser only. Your phone and laptop will not share them, and clearing browser data erases them.</li>
+        <li><b>A card is missing or wrong?</b> Edit its recipe, damage or energy, or add a new disaster, in Disaster card settings.</li>
+      </ul></div>
+      </div>
   </details>
 
-  <div class="grid">
+  <div class="layout">
 
-    <div class="panel" id="depotPanel">
-      <div class="panel-head-row">
-        <h2>Depot</h2>
-        <button type="button" class="sort-btn" id="sortBtn" title="Reorder the list by current amount">⇅ Sort by amount</button>
-      </div>
-      <div class="desc">Enter what you currently have. The plan recalculates as you type — the list only reorders when you press Sort, so nothing jumps around while you're editing.</div>
-      <div id="itemRows"></div>
-    </div>
-
-    <div>
-      <div class="panel">
-        <h2>Optimal Attack Plan</h2>
-        <div class="desc">Sorted by points-per-energy — fire from the top down if you might get interrupted. This is an exhaustive search, not a heuristic: it is mathematically the best possible use of your current depot. Hit "Fire" after each cast and your depot updates automatically.</div>
-        <table class="wide-table">
-          <colgroup>
-            <col style="width:18%"><col style="width:8%"><col style="width:10%"><col style="width:11%">
-            <col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:11%"><col style="width:13%">
-          </colgroup>
-          <thead>
-            <tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts / Cast</th><th class="num">Total Pts</th><th class="num">Dmg / Cast</th><th class="num">Total Dmg</th><th class="num">Energy / Cast</th><th class="num">Total Energy</th><th></th></tr>
-          </thead>
-          <tbody id="planBody"></tbody>
-        </table>
-        <div class="narrow-cards" id="planCards"></div>
-        <div id="emptyPlanMsg" style="display:none; color: var(--muted); padding: 14px 0; font-size: 13px;">No attacks are castable with your current depot yet — add some items on the left.</div>
-        <div id="noCardsMsg" style="display:none; color: var(--bottleneck); padding: 14px 0; font-size: 13px;">You haven't marked any cards as unlocked, so there is nothing to plan with. <button type="button" class="setup-link" id="noCardsBtn">Pick your cards</button></div>
-      </div>
-
-      <div class="callout" id="safestCallout" style="display:none;">
-        <div class="head">Safest attack to fire right now</div>
-        <div id="safestText"></div>
-      </div>
-
-      <div class="callout info" id="giveCallout" style="display:none;">
-        <div class="head">Safe to give teammates</div>
-        <div id="giveText">Everything left over after the optimal plan, with zero cost to your own attacks.</div>
-        <div class="give-list" id="giveList"></div>
-      </div>
-
-      <div class="callout warn" id="bottleneckCallout" style="display:none;">
-        <div class="head">Bottleneck items</div>
-        <div id="bottleneckText"></div>
-      </div>
-
-      <div class="callout chase" id="chasePanel" style="display:none;">
-        <div class="head">Best items to chase</div>
-        <div id="chaseVerdict"></div>
+    <div class="stack side">
+      <section class="panel" id="depotPanel" aria-labelledby="depotHeading">
+        <div class="head-row">
+          <h2 class="ph" id="depotHeading">Your war items</h2>
+          <button type="button" class="btn-text" id="sortBtn" title="Reorder the list by current amount">Sort by amount</button>
+        </div>
+        <p class="hint">Counts update the plan as you type. The list only reorders when you sort it, so rows do not jump while you edit.</p>
+        <div id="itemRows"></div>
+      </section>
+      <div class="sec" id="chasePanel" style="display:none;">
+        <div class="sk">Items to chase</div>
+        <h3 class="sh" id="chaseVerdict"></h3>
         <table class="chase-table" id="chaseTable" style="display:none;">
-          <colgroup><col style="width:46%"><col style="width:27%"><col style="width:27%"></colgroup>
           <thead><tr><th>Item</th><th class="num">+1</th><th class="num">+3</th></tr></thead>
           <tbody id="chaseBody"></tbody>
         </table>
-        <div class="chase-note" id="chaseNote"></div>
+        <p id="chaseNote"></p>
       </div>
     </div>
 
+    <div class="stack">
+      <section class="panel" aria-labelledby="planHeading">
+        <h2 class="ph" id="planHeading">No attack is castable yet</h2>
+        <p class="hint">Sorted by points per energy. The search is exact: no other combination of these items scores higher.</p>
+        <table id="planTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Disaster</th><th class="num">Casts</th><th class="num">Points</th>
+              <th class="num col-opt">Damage</th><th class="num col-opt">Energy</th>
+              <th class="act"><span class="vh">Fire</span></th>
+            </tr>
+          </thead>
+          <tbody id="planBody"></tbody>
+        </table>
+        <div class="note-row" id="emptyPlanMsg" style="display:none;"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><mask id="cut-info-empty"><rect width="20" height="20" fill="#fff"/><g fill="none" stroke="#000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><path d="M10 9v5.4"/><rect x="9" y="5.4" width="2" height="2" fill="#000" stroke="none"/></g></mask><g fill="currentColor" mask="url(#cut-info-empty)"><rect x="2" y="2" width="16" height="16" rx="2.5"/></g></svg><span>Your attack plan appears here once your depot has enough items to cast a card.</span></div>
+        <div class="note-row" id="noCardsMsg" style="display:none;"><svg class="ico" viewBox="0 0 20 20" aria-hidden="true" style="color: var(--warning);"><mask id="cut-warn-empty"><rect width="20" height="20" fill="#fff"/><g fill="none" stroke="#000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><path d="M10 7v5"/><rect x="9" y="13.4" width="2" height="2" fill="#000" stroke="none"/></g></mask><g fill="currentColor" mask="url(#cut-warn-empty)"><path d="M10 2.6L18.2 17H1.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></g></svg><span><strong style="color: var(--text);">No cards selected.</strong> Choose the cards you have unlocked to get a plan. <button type="button" class="btn-text" id="noCardsBtn">Choose cards</button></span></div>
+      </section>
+
+      <section class="panel" id="extrasPanel" style="display:none;" aria-label="Next moves">
+        <div class="sec" id="safestCallout" style="display:none;">
+          <div class="sk">Safest attack right now</div>
+          <h3 class="sh" id="safestHeading"></h3>
+          <p id="safestText"></p>
+        </div>
+
+        <div class="sec" id="giveCallout" style="display:none;">
+          <div class="sk">Spare items</div>
+          <h3 class="sh" id="giveHeading"></h3>
+          <p id="giveText">Left over after the best plan, so giving them away costs your own attacks nothing.</p>
+          <ul class="plain-list" id="giveList"></ul>
+        </div>
+
+        <div class="sec" id="bottleneckCallout" style="display:none;">
+          <div class="status warn" id="bottleneckStatus"></div>
+          <h3 class="sh" id="bottleneckHeading" style="margin-top: var(--space-1);"></h3>
+          <p id="bottleneckText"></p>
+        </div>
+
+      </section>
+
+      <details class="disc" id="burstDisc" open>
+        <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Energy-bank burst planner</summary>
+        <div class="disc-body">
+          <p class="hint" style="margin-top:0;">Picks the best part of your plan that fits inside one energy bank, so it costs the rest of the plan nothing. Use it to time a Jackpot or a full-bank opening strike.</p>
+          <div class="inline-field">
+            <label for="energyBank">Energy bank size</label>
+            <input class="field" type="number" id="energyBank" value="12" min="1" inputmode="numeric">
+            <span class="tip">Most late arenas cap at 12. Change it if yours differs.</span>
+          </div>
+          <h3 class="ph" id="burstHeading" style="margin-bottom: var(--space-2);">Nothing in your plan fits an energy bank yet</h3>
+          <table>
+            <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Points</th><th class="num">Damage</th><th class="num">Energy</th></tr></thead>
+            <tbody id="burstBody"></tbody>
+          </table>
+          <p class="mono" style="margin: var(--space-3) 0 0; color: var(--text-secondary);">Total: <span id="burstPts">0</span> points, <span id="burstDmg">0</span> damage, <span id="burstEnergy">0</span> energy</p>
+        </div>
+      </details>
+    </div>
+
   </div>
 
-  <details open>
-    <summary>Energy-bank burst planner (for Jackpot windows)</summary>
-    <div class="desc" style="margin-top:8px;">Finds the best possible subset of your <em>already-optimal</em> plan that fits inside one energy bank — zero opportunity cost, just resequenced. Use this to time a Jackpot or any full-bank opening strike.</div>
-    <div class="burst-box" style="margin-top:12px;">
-      <label>Energy bank size</label>
-      <input type="number" id="energyBank" value="12" min="1">
-      <span style="color:var(--muted); font-size:12px;">Space Rock Rumble and most late arenas cap at 12 — change if yours differs.</span>
+
+
+  <details class="disc">
+    <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Disaster card settings</summary>
+    <div class="disc-body">
+      <p class="hint" style="margin-top:0;">Tick the cards you have unlocked. The plan only uses ticked cards. Points depend on card level, so update them when a card levels up. Damage is what a cast takes off the enemy city, as shown on the card in game. Select a recipe to change the items it needs.</p>
+      <button type="button" class="btn" id="openSetupBtn">Run quick setup</button>
+      <div class="card-editor-head">
+        <div>Unlocked and card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
+      </div>
+      <div class="card-editor" id="cardEditor"></div>
+      <div class="add-row">
+        <button type="button" class="btn" id="addCardBtn"><svg class="ico ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>Add disaster</button>
+      </div>
     </div>
-    <table class="wide-table">
-      <colgroup>
-        <col style="width:34%"><col style="width:16%"><col style="width:16%"><col style="width:17%"><col style="width:17%">
-      </colgroup>
-      <thead><tr><th>Disaster</th><th class="num">Casts</th><th class="num">Pts</th><th class="num">Dmg</th><th class="num">Energy</th></tr></thead>
-      <tbody id="burstBody"></tbody>
-    </table>
-    <div class="narrow-cards" id="burstCards"></div>
-    <div style="margin-top:8px; font-size:13px;">Burst total: <strong id="burstPts">0</strong> points, <strong id="burstDmg">0</strong> damage, using <strong id="burstEnergy">0</strong> energy</div>
   </details>
 
-  <details>
-    <summary>Disaster card settings</summary>
-    <div class="desc" style="margin-top:8px;">Tick the box next to each card you have unlocked. The plan only uses ticked cards. Update points whenever a card levels up, or add a card that's new to the game. Damage is the amount a cast takes off the enemy city's health, as shown on the card in-game. Tap "Items needed" to set the recipe.</div>
-    <div style="margin:10px 0 4px;"><button type="button" class="setup-link" id="openSetupBtn">Run the quick card setup</button> <span style="color:var(--muted); font-size:12px;">(unlocks and points on one screen)</span></div>
-    <div class="card-editor-head">
-      <div>Unlocked / Card</div><div>Items needed</div><div>Points</div><div>Damage</div><div>Energy</div><div></div>
+  <details class="disc">
+    <summary><svg class="chev ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6"/></svg>Battle boosters</summary>
+    <div class="disc-body">
+      <p class="hint" style="margin-top:0;">Boosters cost no energy and are not tied to your depot, so they sit outside the plan. Jackpot is worth planning around: it doubles the war points of every hit on the target city while it is active.</p>
+      <div class="inline-field">
+        <label for="jackpotCount">Jackpot boosters you have</label>
+        <input class="field" type="number" id="jackpotCount" value="0" min="0" inputmode="numeric">
+        <span class="tip">Each one gets its own best-fit window from your plan, at no cost to the rest of it.</span>
+      </div>
+      <div id="jackpotWindows"></div>
+      <div class="booster-ref" id="boosterRef"></div>
     </div>
-    <div class="card-editor" id="cardEditor"></div>
-    <button type="button" class="add-card-btn" id="addCardBtn">+ Add new disaster</button>
-  </details>
-
-  <details>
-    <summary>Battle boosters</summary>
-    <div class="desc" style="margin-top:8px;">Boosters don't cost energy and aren't tied to your item depot, so they sit outside the main optimizer — but Jackpot is worth planning around, since it doubles the war points earned by every hit landed on the target city while it's active.</div>
-
-    <div class="burst-box" style="margin-top:14px;">
-      <label>Jackpot boosters you have</label>
-      <input type="number" id="jackpotCount" value="0" min="0">
-      <span style="color:var(--muted); font-size:12px;">Each one gets its own best-fit energy-bank window, pulled from your existing plan — zero cost to the rest of it.</span>
-    </div>
-    <div id="jackpotWindows"></div>
-
-    <div class="booster-ref" id="boosterRef" style="margin-top:18px;"></div>
   </details>
 
   <footer>
-    <div class="about">
-      Made by <span class="city">Brrville</span> &middot; Friend code <button type="button" class="code-btn" id="friendCodeBtn" title="Tap to copy">PJ3S8B</button>
-    </div>
-    <div>Your depot and card settings are saved on this device only.</div>
+    <p class="who">Made by <strong>Brrville</strong> &middot; Friend code <button type="button" class="code-btn" id="friendCodeBtn" title="Tap to copy">PJ3S8B</button></p>
+    <p>Your depot and card settings are saved on this device only.</p>
     <div class="footer-links">
-      <button type="button" class="reset-link" id="footerSetupBtn">Card setup</button>
-      <button type="button" class="reset-link" id="resetBtn">Reset everything to defaults</button>
+      <button type="button" class="btn-text" id="footerSetupBtn">Card setup</button>
+      <button type="button" class="btn-text" id="resetBtn">Reset everything to defaults</button>
     </div>
-    <div class="fine">Unofficial fan tool for SimCity BuildIt. Not affiliated with or endorsed by EA or Maxis.</div>
+    <p class="fine">Unofficial fan tool for SimCity BuildIt. Not affiliated with or endorsed by EA or Maxis.</p>
   </footer>
-</div>
+</main>
 
-<div class="modal-overlay" id="setupModal">
-  <div class="modal-box setup-box">
-    <h3>Which cards do you have?</h3>
-    <div class="desc">Tick the cards you have and enter the war points each one shows in-game. Points rise with card level (Level 1 is 100 per point of damage, about +10% per level), so these are Level 1 starting values. Everything can be changed later in Disaster card settings.</div>
-    <div class="setup-bank"><span>Energy bank size (your arena's limit)</span><input type="text" inputmode="numeric" id="setupBank"></div>
-    <div class="setup-tools"><button type="button" class="setup-link" id="setupAllBtn">Select all</button><button type="button" class="setup-link" id="setupNoneBtn">Clear</button></div>
-    <div id="setupRows"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn-cancel" id="setupSkipBtn">Skip for now</button>
-      <button type="button" class="btn-save" id="setupSaveBtn">Save and start</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="recipeModal">
+<div class="modal-overlay" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
   <div class="modal-box">
-    <h3 id="recipeModalTitle">Items needed</h3>
-    <div class="desc">Set how many of each item this disaster needs. Leave anything not required at 0.</div>
-    <div class="recipe-grid" id="recipeGrid"></div>
+    <div class="modal-head">
+      <h3 id="setupTitle">Choose the cards you have unlocked</h3>
+      <p class="hint">Tick each card you own and enter the war points it shows in game. Points rise with card level (about 10% per level), so these are Level 1 starting values. You can change all of this later in Disaster card settings.</p>
+    </div>
+    <div class="modal-scroll">
+      <div class="setup-bank"><label for="setupBank">Energy bank size</label><input class="field" type="text" inputmode="numeric" id="setupBank"></div>
+      <div class="setup-tools"><button type="button" class="btn-text" id="setupAllBtn">Select all</button><button type="button" class="btn-text" id="setupNoneBtn">Clear</button></div>
+      <div id="setupRows"></div>
+    </div>
     <div class="modal-actions">
-      <button type="button" class="btn-cancel" id="recipeCancelBtn">Cancel</button>
-      <button type="button" class="btn-save" id="recipeSaveBtn">Save</button>
+      <button type="button" class="btn" id="setupSkipBtn">Skip for now</button>
+      <button type="button" class="btn btn-primary" id="setupSaveBtn">Save and start</button>
     </div>
   </div>
 </div>
 
+<div class="modal-overlay" id="recipeModal" role="dialog" aria-modal="true" aria-labelledby="recipeModalTitle">
+  <div class="modal-box" style="max-width: 440px;">
+    <div class="modal-head">
+      <h3 id="recipeModalTitle">Items needed</h3>
+      <p class="hint">Set how many of each item this disaster needs. Leave unused items at 0.</p>
+    </div>
+    <div class="modal-scroll">
+      <div class="recipe-grid" id="recipeGrid"></div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn" id="recipeCancelBtn">Cancel</button>
+      <button type="button" class="btn btn-primary" id="recipeSaveBtn">Save recipe</button>
+    </div>
+  </div>
+</div>
 <script>
 // ---------- Data ----------
 const ITEMS = ["Propeller","Pliers","FireHydrant","Ammo","Gasoline","Medkit","Plunger","RubberBoots","Megaphone","Duck","Anvil","Binoculars","Donut"];
@@ -894,7 +520,7 @@ const ITEM_LABELS = {
 // Full attack catalog. Recipe, energy and damage are fixed by the game. Points depend on each player's card level:
 // the values below are Level 1 (100 points per point of damage), and each level adds roughly 10%.
 // Players set their own points in the card setup. "owned" is whether the player has unlocked the card.
-// Source: SimCity wiki Club Wars attack list (checked against 14 cards from a live account; the other 14 are single-source).
+// Source: SimCity wiki Club Wars attack list (checked against 14 cards from a live account; the other 10 are single-source).
 const DEFAULT_CARDS = [
   // Class S
   {name:"Comic Hand",        cls:"S",   rarity:"Common",    items:{Plunger:1,Duck:1},                       pts:100,  energy:1,  dmg:1},
@@ -945,7 +571,7 @@ function syncActive(){ cards = allCards.filter(c => c.owned); }
 let depot = {};
 ITEMS.forEach(i => depot[i] = 0);
 
-// ---------- Save / load (browser local storage — this file runs on your own device, nothing leaves it) ----------
+// ---------- Save / load (browser local storage, this file runs on your own device, nothing leaves it) ----------
 const STORAGE_KEY = 'clubWarsOptimizerState_v1';
 
 // Brand-new visitors see the card setup screen once. Anyone with an older save skips it.
@@ -964,7 +590,7 @@ function saveState(){
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch(e){
-    // storage unavailable (private browsing, etc.) — fail silently, tool still works, just won't remember
+    // storage unavailable (private browsing, etc.), fail silently, tool still works, just won't remember
   }
 }
 
@@ -1014,7 +640,7 @@ function loadState(){
     if (state.energyBank) document.getElementById('energyBank').value = state.energyBank;
     if (state.jackpotCount) document.getElementById('jackpotCount').value = state.jackpotCount;
   } catch(e){
-    // corrupted or unavailable storage — just start from defaults
+    // corrupted or unavailable storage, just start from defaults
   }
   syncActive();
 }
@@ -1208,9 +834,34 @@ function bestBurstFromPlan(planCombo, cardList, energyCap){
   return best;
 }
 
-// ---------- Rendering ----------
+// ---------- Small helpers ----------
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function plural(n, word){ return `${Number(n).toLocaleString()} ${word}${n === 1 ? '' : 's'}`; }
+function joinAnd(list){ return list.length <= 1 ? list.join('') : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1]; }
+let iconSeq = 0;
+// Status icons from the design system: a solid shape with a cut-out glyph. Always shown next to a word.
+function statusIcon(kind){
+  const id = 'cut-' + kind + (++iconSeq);
+  if (kind === 'warning'){
+    return `<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><mask id="${id}"><rect width="20" height="20" fill="#fff"/><g fill="none" stroke="#000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><path d="M10 7v5"/><rect x="9" y="13.4" width="2" height="2" fill="#000" stroke="none"/></g></mask><g fill="currentColor" mask="url(#${id})"><path d="M10 2.6L18.2 17H1.8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></g></svg>`;
+  }
+  return `<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><mask id="${id}"><rect width="20" height="20" fill="#fff"/><g fill="none" stroke="#000" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><path d="M10 9v5.4"/><rect x="9" y="5.4" width="2" height="2" fill="#000" stroke="none"/></g></mask><g fill="currentColor" mask="url(#${id})"><rect x="2" y="2" width="16" height="16" rx="2.5"/></g></svg>`;
+}
+const ICON_CLOSE = '<svg class="ico ico-stroke" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>';
+let lastLeftover = null;
+function applyItemNotes(){
+  ITEMS.forEach(item => {
+    const el = $('note-' + item);
+    if (!el) return;
+    if (!lastLeftover){ el.textContent = ''; return; }
+    const have = depot[item] || 0, left = lastLeftover[item] || 0;
+    el.textContent = (have > 0 && left === 0) ? 'All used' : (left > 0 ? `${left} spare` : '');
+  });
+}
+
 function renderItemRows(){
-  const container = document.getElementById('itemRows');
+  const container = $('itemRows');
   const sortedItems = ITEMS.slice().sort((a,b) => {
     const diff = (depot[b]||0) - (depot[a]||0);
     if (diff !== 0) return diff;
@@ -1223,11 +874,11 @@ function renderItemRows(){
     row.className = 'item-row';
     row.id = 'row-' + item;
     row.innerHTML = `
-      <label for="in-${item}">${ITEM_LABELS[item]}</label>
+      <div class="iname"><label for="in-${item}">${ITEM_LABELS[item]}</label><span class="inote" id="note-${item}"></span></div>
       <div class="stepper">
-        <button type="button" data-item="${item}" data-dir="-1">−</button>
-        <input type="number" id="in-${item}" min="0" value="${depot[item]||0}">
-        <button type="button" data-item="${item}" data-dir="1">+</button>
+        <button type="button" class="step-btn" data-item="${item}" data-dir="-1" aria-label="One less ${ITEM_LABELS[item]}">&minus;</button>
+        <input class="field" type="number" inputmode="numeric" id="in-${item}" min="0" value="${depot[item]||0}">
+        <button type="button" class="step-btn" data-item="${item}" data-dir="1" aria-label="One more ${ITEM_LABELS[item]}">+</button>
       </div>
     `;
     container.appendChild(row);
@@ -1240,7 +891,7 @@ function renderItemRows(){
       let v = (depot[item]||0) + dir;
       if (v < 0) v = 0;
       depot[item] = v;
-      const inp = document.getElementById('in-' + item);
+      const inp = $('in-' + item);
       if (inp) inp.value = v;
       recalc(); // numbers update live, order stays put until Sort is pressed
     });
@@ -1255,16 +906,12 @@ function renderItemRows(){
       recalc(); // live numbers update while typing, order stays put
     });
   });
+  applyItemNotes();
 }
-
-document.getElementById('sortBtn').addEventListener('click', () => {
-  renderItemRows();
-});
-
 function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
 function buildCardEditor(){
-  const container = document.getElementById('cardEditor');
+  const container = $('cardEditor');
   container.innerHTML = '';
   allCards.forEach((card, idx) => {
     const row = document.createElement('div');
@@ -1272,17 +919,17 @@ function buildCardEditor(){
     const entries = Object.entries(card.items);
     const summary = entries.length
       ? entries.map(([k,v]) => `${ITEM_LABELS[k]||k} ×${v}`).join(', ')
-      : 'No items set — click to add';
+      : 'No items set, click to add';
     row.innerHTML = `
       <div class="namecell">
         <input type="checkbox" class="own-chk" data-idx="${idx}" ${card.owned ? 'checked' : ''} title="I have this card unlocked" aria-label="Unlocked">
-        <input class="name-input" data-idx="${idx}" data-field="name" value="${escAttr(card.name)}">
+        <input class="field name-input" data-idx="${idx}" data-field="name" value="${escAttr(card.name)}" aria-label="Card name">
       </div>
-      <button type="button" class="recipe-btn${entries.length?'':' empty'}" data-idx="${idx}" title="${escAttr(summary)}">${escAttr(summary)}</button>
-      <label class="mini"><span>Points</span><input class="small" data-idx="${idx}" data-field="pts" value="${card.pts}"></label>
-      <label class="mini"><span>Damage</span><input class="small" data-idx="${idx}" data-field="dmg" value="${card.dmg||0}"></label>
-      <label class="mini"><span>Energy</span><input class="small" data-idx="${idx}" data-field="energy" value="${card.energy}"></label>
-      <button type="button" class="del-btn" data-idx="${idx}" title="Remove this card">×</button>
+      <button type="button" class="recipe-btn${entries.length?'':' empty'}" data-idx="${idx}" title="${escAttr(summary)}">${esc(summary)}</button>
+      <label class="mini"><span>Points</span><input class="field num small" data-idx="${idx}" data-field="pts" value="${card.pts}" inputmode="numeric" aria-label="Points"></label>
+      <label class="mini"><span>Damage</span><input class="field num small" data-idx="${idx}" data-field="dmg" value="${card.dmg||0}" inputmode="numeric" aria-label="Damage"></label>
+      <label class="mini"><span>Energy</span><input class="field num small" data-idx="${idx}" data-field="energy" value="${card.energy}" inputmode="numeric" aria-label="Energy"></label>
+      <button type="button" class="icon-btn del-btn" data-idx="${idx}" title="Remove this card" aria-label="Remove ${escAttr(card.name)}">${ICON_CLOSE}</button>
     `;
     container.appendChild(row);
   });
@@ -1348,7 +995,7 @@ let editingCardIdx = null;
 function openRecipeModal(idx){
   editingCardIdx = idx;
   const card = allCards[idx];
-  document.getElementById('recipeModalTitle').textContent = `Items needed — ${card.name}`;
+  document.getElementById('recipeModalTitle').textContent = `Items needed: ${card.name}`;
   const grid = document.getElementById('recipeGrid');
   grid.innerHTML = '';
   ITEMS.forEach(item => {
@@ -1394,25 +1041,24 @@ const BOOSTERS = [
   { name:"Energy Vampire",levels:3, effect:"Slows down an enemy city's energy regeneration.", tip:"Best timed right before they'd normally cash in a full energy bank." },
   { name:"Energy Thief",  levels:2, effect:"Steals some of an enemy city's stored energy directly.", tip:"Use the moment you see them sitting on a near-full bank." },
   { name:"Freeze",        levels:3, effect:"Freezes a city so it cannot launch any attacks.", tip:"Drop it on the enemy's best attacker right when they're loaded with energy." },
-  { name:"Umbrella",      levels:3, effect:"Makes the target city un-attackable for the duration — a temporary shield.", tip:"Save it to protect your best attacker (or yourself) from focus-fire." },
-  { name:"Dud",           levels:3, effect:"Halves the war points an enemy earns from hits against the target city.", tip:"Defensive — drop on your own city if you're about to get focus-fired." },
+  { name:"Umbrella",      levels:3, effect:"Makes the target city un-attackable for the duration, a temporary shield.", tip:"Save it to protect your best attacker (or yourself) from focus-fire." },
+  { name:"Dud",           levels:3, effect:"Halves the war points an enemy earns from hits against the target city.", tip:"Defensive, drop on your own city if you're about to get focus-fired." },
 ];
 
 function renderBoosterRef(){
-  const container = document.getElementById('boosterRef');
+  const container = $('boosterRef');
   container.innerHTML = '';
   BOOSTERS.forEach(b => {
-    const card = document.createElement('div');
-    card.className = 'booster-card' + (b.name === 'Jackpot' ? ' highlight' : '');
-    card.innerHTML = `
-      <div class="bname">${b.name} <span class="blevels">Lv 1–${b.levels}</span></div>
-      <div class="beffect">${b.effect}</div>
-      <div class="btip">${b.tip}</div>
+    const el = document.createElement('div');
+    el.className = 'booster';
+    el.innerHTML = `
+      <div class="bname"><span>${esc(b.name)}</span><span class="blevels">Levels 1 to ${b.levels}</span></div>
+      <div class="beffect">${esc(b.effect)}</div>
+      <div class="btip">${esc(b.tip)}</div>
     `;
-    container.appendChild(card);
+    container.appendChild(el);
   });
 }
-
 function computeJackpotWindows(planCombo, cardList, energyBank, numJackpots){
   const pool = Object.assign({}, planCombo);
   const windows = [];
@@ -1428,16 +1074,17 @@ function computeJackpotWindows(planCombo, cardList, energyBank, numJackpots){
 }
 
 function renderJackpotWindows(combo, energyBank){
-  const numJackpots = parseInt(document.getElementById('jackpotCount').value) || 0;
-  const container = document.getElementById('jackpotWindows');
+  const numJackpots = parseInt($('jackpotCount').value) || 0;
+  const container = $('jackpotWindows');
   container.innerHTML = '';
+  const say = text => { const p = document.createElement('div'); p.className = 'note-row'; p.innerHTML = statusIcon('info') + '<span></span>'; p.lastChild.textContent = text; container.appendChild(p); };
   if (numJackpots <= 0){
-    container.innerHTML = '<div class="jp-empty">Enter how many Jackpot boosters you have to see the best window for each one.</div>';
+    say('Enter how many Jackpot boosters you have to see the best window for each one.');
     return;
   }
   const windows = computeJackpotWindows(combo, cards, energyBank, numJackpots);
   if (windows.length === 0){
-    container.innerHTML = '<div class="jp-empty">No attacks in your current plan fit inside one energy bank yet — add more depot items.</div>';
+    say('No attack in your plan fits inside one energy bank yet. Add more items to your depot.');
     return;
   }
   windows.forEach((w, i) => {
@@ -1447,27 +1094,23 @@ function renderJackpotWindows(combo, energyBank){
       .filter(([,k]) => k > 0)
       .map(([name,k]) => {
         const card = cards.find(c => c.name === name);
-        return `${name} ×${k} (${card.pts*k} pts)`;
+        return `${esc(name)} ×${k} (${(card.pts*k).toLocaleString()} pts)`;
       }).join(', ');
     let energyUsed = 0, dmgUsed = 0;
     Object.entries(w.combo).forEach(([name,k]) => {
       if (k){ const c = cards.find(cc => cc.name === name); energyUsed += c.energy * k; dmgUsed += (c.dmg || 0) * k; }
     });
     box.innerHTML = `
-      <div class="jhead">Jackpot window ${i+1}</div>
+      <div class="jhead">Window ${i+1}: ${(w.pts*2).toLocaleString()} points under Jackpot</div>
       <div>${lines}</div>
-      <div class="jtotal">Base: ${w.pts.toLocaleString()} pts → <span class="x2">doubled under Jackpot: ${(w.pts*2).toLocaleString()} pts</span> · ${dmgUsed} damage · ${energyUsed} energy</div>
+      <div class="jmeta">Base ${w.pts.toLocaleString()} points, doubled to ${(w.pts*2).toLocaleString()} &middot; ${dmgUsed.toLocaleString()} damage &middot; ${energyUsed} energy</div>
     `;
     container.appendChild(box);
   });
   if (windows.length < numJackpots){
-    const note = document.createElement('div');
-    note.className = 'jp-empty';
-    note.textContent = `Only ${windows.length} of ${numJackpots} windows found — your plan runs out of attacks that fit an energy bank beyond that.`;
-    container.appendChild(note);
+    say(`Only ${windows.length} of ${numJackpots} windows found. Your plan runs out of attacks that fit an energy bank beyond that.`);
   }
 }
-
 document.getElementById('jackpotCount').addEventListener('input', recalc);
 
 // ---------- Fire an attack: deducts its item cost from the depot ----------
@@ -1501,52 +1144,58 @@ function rankChase(startDepot, cardList, baselinePts){
 let chaseTimer = null;
 let lastBaseline = 0;
 
+function syncExtras(){
+  const any = ['safestCallout','giveCallout','bottleneckCallout'].some(id => $(id).style.display !== 'none');
+  $('extrasPanel').style.display = any ? 'block' : 'none';
+}
+
 function scheduleChase(){
-  const panel = document.getElementById('chasePanel');
+  const panel = $('chasePanel');
   clearTimeout(chaseTimer);
   const totalStock = ITEMS.reduce((s, i) => s + (depot[i] || 0), 0);
-  if (totalStock === 0){ panel.style.display = 'none'; return; }
+  if (totalStock === 0){ panel.style.display = 'none'; syncExtras(); return; }
   panel.style.display = 'block';
-  document.getElementById('chaseVerdict').textContent = 'Crunching the numbers…';
-  document.getElementById('chaseTable').style.display = 'none';
-  document.getElementById('chaseNote').textContent = '';
-  chaseTimer = setTimeout(renderChase, 400); // wait until you stop typing/tapping
+  $('chaseVerdict').textContent = 'Calculating…';
+  $('chaseTable').style.display = 'none';
+  $('chaseNote').textContent = '';
+  syncExtras();
+  chaseTimer = setTimeout(renderChase, 400); // wait until you stop typing or tapping
 }
 
 function renderChase(){
   const rows = rankChase(depot, cards, lastBaseline).filter(r => r.g3 > 0).slice(0, 6);
-  const verdict = document.getElementById('chaseVerdict');
-  const table = document.getElementById('chaseTable');
-  const body = document.getElementById('chaseBody');
-  const note = document.getElementById('chaseNote');
+  const verdict = $('chaseVerdict');
+  const table = $('chaseTable');
+  const body = $('chaseBody');
+  const note = $('chaseNote');
   body.innerHTML = '';
 
   if (rows.length === 0){
-    verdict.textContent = 'No single item moves the needle right now — your depot is balanced for these cards. Check the Bottleneck panel for anything sitting at zero.';
+    verdict.textContent = 'No single item adds points right now';
     table.style.display = 'none';
-    note.textContent = '';
+    note.textContent = 'Your depot is balanced for these cards. Check the blocked cards above for anything sitting at zero.';
     return;
   }
 
   const top = rows[0];
-  verdict.textContent = top.g1 > 0
-    ? `Chase ${ITEM_LABELS[top.item]} first — even +1 adds ${top.g1} pts, and +3 adds ${top.g3}.`
-    : `Chase ${ITEM_LABELS[top.item]} first — +1 alone adds nothing, but +3 adds ${top.g3} pts.`;
+  verdict.textContent = `Chase ${ITEM_LABELS[top.item]} first`;
+  note.textContent = top.g1 > 0
+    ? `Even one more adds ${top.g1.toLocaleString()} points, and three more add ${top.g3.toLocaleString()}. Each figure is the extra war points your best plan would earn from gaining that many of that one item, based on your current card stats.`
+    : `One more alone adds nothing, but three more add ${top.g3.toLocaleString()} points. Each figure is the extra war points your best plan would earn from gaining that many of that one item, based on your current card stats.`;
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
-    const fmt = g => g > 0 ? `<td class="num gain">+${g}</td>` : `<td class="num none">—</td>`;
+    const fmt = g => `<td class="num${g > 0 ? ' gain' : ''}">${g > 0 ? '+' + g.toLocaleString() : '0'}</td>`;
     tr.innerHTML = `<td>${ITEM_LABELS[r.item]}</td>${fmt(r.g1)}${fmt(r.g3)}`;
     body.appendChild(tr);
   });
   table.style.display = 'table';
-  note.textContent = 'Extra war points your optimal plan would earn if you gained that many more of just that one item. A "—" under +1 with a gain under +3 means you need a few of it before it pays off. Uses your current card stats.';
 }
-
 function recalc(){
   // 1. Full optimal plan
   const result = optimize(depot, cards);
   const combo = result.combo;
+  const n = v => Number(v).toLocaleString();
 
   // ranked by pts/energy
   const rows = cards
@@ -1554,69 +1203,49 @@ function recalc(){
     .map(c => ({card:c, count: combo[c.name]}))
     .sort((a,b) => (b.card.pts/b.card.energy) - (a.card.pts/a.card.energy));
 
-  const planBody = document.getElementById('planBody');
-  const planCards = document.getElementById('planCards');
+  const planBody = $('planBody');
   planBody.innerHTML = '';
-  planCards.innerHTML = '';
   let totalEnergy = 0, totalAttacks = 0, totalDamage = 0;
-  const showDmg = d => d > 0 ? d.toLocaleString() : '—'; // cards that deal no damage (e.g. Shield Buster) show a dash
   rows.forEach(r => {
-    const tr = document.createElement('tr');
-    const dmgEach = r.card.dmg || 0;
-    const totalPtsCard = r.card.pts * r.count;
-    const totalEnergyCard = r.card.energy * r.count;
+    const c = r.card;
+    const dmgEach = c.dmg || 0;
+    const totalPtsCard = c.pts * r.count;
+    const totalEnergyCard = c.energy * r.count;
     const totalDmgCard = dmgEach * r.count;
     totalEnergy += totalEnergyCard;
     totalAttacks += r.count;
     totalDamage += totalDmgCard;
-    const shieldTag = r.card.name==='Shield Buster' ? ' <span class="tag">strips shield</span>' : '';
+    const shield = c.name === 'Shield Buster' ? ', strips shield' : '';
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${r.card.name}${shieldTag}</td>
+      <td>
+        <div class="dn">${esc(c.name)}</div>
+        <div class="dm">Each: ${n(c.pts)} pts, ${n(dmgEach)} dmg, ${n(c.energy)} energy${shield}</div>
+        <div class="dm only-sm">All casts: ${n(totalDmgCard)} dmg, ${n(totalEnergyCard)} energy</div>
+      </td>
       <td class="num">${r.count}×</td>
-      <td class="num">${r.card.pts}</td>
-      <td class="num">${totalPtsCard}</td>
-      <td class="num">${showDmg(dmgEach)}</td>
-      <td class="num">${showDmg(totalDmgCard)}</td>
-      <td class="num">${r.card.energy}</td>
-      <td class="num">${totalEnergyCard}</td>
-      <td><button type="button" class="fire-btn" data-name="${r.card.name}">Fire ×1</button></td>
+      <td class="num">${n(totalPtsCard)}</td>
+      <td class="num col-opt">${n(totalDmgCard)}</td>
+      <td class="num col-opt">${n(totalEnergyCard)}</td>
+      <td class="act"><button type="button" class="btn fire-btn" data-name="${escAttr(c.name)}">Fire ×1</button></td>
     `;
     planBody.appendChild(tr);
-
-    const card = document.createElement('div');
-    card.className = 'plan-card';
-    card.innerHTML = `
-      <div class="pc-head">
-        <div class="pc-name">${r.card.name}${shieldTag}</div>
-        <div class="pc-casts">${r.count}× cast</div>
-      </div>
-      <div class="pc-stats">
-        <div>Pts/cast: <strong>${r.card.pts}</strong></div>
-        <div>Total pts: <strong>${totalPtsCard}</strong></div>
-        <div>Dmg/cast: <strong>${showDmg(dmgEach)}</strong></div>
-        <div>Total dmg: <strong>${showDmg(totalDmgCard)}</strong></div>
-        <div>Energy/cast: <strong>${r.card.energy}</strong></div>
-        <div>Total energy: <strong>${totalEnergyCard}</strong></div>
-      </div>
-      <button type="button" class="fire-btn" data-name="${r.card.name}">Fire ×1</button>
-    `;
-    planCards.appendChild(card);
   });
-
   planBody.querySelectorAll('.fire-btn').forEach(btn => {
-    btn.addEventListener('click', () => fireAttack(btn.dataset.name));
-  });
-  planCards.querySelectorAll('.fire-btn').forEach(btn => {
     btn.addEventListener('click', () => fireAttack(btn.dataset.name));
   });
 
   const noCards = cards.length === 0;
-  document.getElementById('emptyPlanMsg').style.display = (rows.length || noCards) ? 'none' : 'block';
-  document.getElementById('noCardsMsg').style.display = noCards ? 'block' : 'none';
-  document.getElementById('totalPts').textContent = result.pts.toLocaleString();
-  document.getElementById('totalEnergy').textContent = totalEnergy.toLocaleString();
-  document.getElementById('totalAttacks').textContent = totalAttacks.toLocaleString();
-  document.getElementById('totalDamage').textContent = totalDamage.toLocaleString();
+  $('planTable').style.display = rows.length ? 'table' : 'none';
+  $('emptyPlanMsg').style.display = (rows.length || noCards) ? 'none' : 'flex';
+  $('noCardsMsg').style.display = noCards ? 'flex' : 'none';
+  $('planHeading').textContent = rows.length
+    ? `${plural(totalAttacks, 'attack')} use ${n(totalEnergy)} energy for ${n(result.pts)} points`
+    : (noCards ? 'No cards selected' : 'No attack is castable yet');
+  $('totalPts').textContent = n(result.pts);
+  $('totalEnergy').textContent = n(totalEnergy);
+  $('totalAttacks').textContent = n(totalAttacks);
+  $('totalDamage').textContent = n(totalDamage);
 
   // 2. Leftover items
   const used = {}; ITEMS.forEach(i => used[i]=0);
@@ -1628,49 +1257,46 @@ function recalc(){
   const leftover = {};
   ITEMS.forEach(i => leftover[i] = (depot[i]||0) - used[i]);
 
-  // color-code depot rows
-  ITEMS.forEach(item => {
-    const row = document.getElementById('row-' + item);
-    if (!row) return;
-    row.classList.remove('full','spare');
-    if (depot[item] > 0 && leftover[item] === 0) row.classList.add('full');
-    else if (leftover[item] > 0) row.classList.add('spare');
-  });
+  // depot rows say in words whether an item is fully used or has spares
+  lastLeftover = leftover;
+  applyItemNotes();
 
-  // give-away callout: generous threshold = at least 2 spare, or fully unused item with stock >0
-  const giveList = document.getElementById('giveList');
-  const tightList = [];
+  // spare items you can give away
+  const giveList = $('giveList');
   giveList.innerHTML = '';
-  let anyLeftover = false;
+  let spareTotal = 0;
   ITEMS.forEach(item => {
     if (leftover[item] > 0){
-      anyLeftover = true;
-      const chip = document.createElement('div');
-      const isGenerous = leftover[item] >= 2;
-      chip.className = 'give-chip' + (isGenerous ? '' : ' tight');
-      chip.textContent = `${ITEM_LABELS[item]} ×${leftover[item]}`;
-      giveList.appendChild(chip);
+      spareTotal += leftover[item];
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${ITEM_LABELS[item]}</span><span class="qty">×${leftover[item]}${leftover[item] === 1 ? ', only one spare' : ''}</span>`;
+      giveList.appendChild(li);
     }
   });
-  document.getElementById('giveCallout').style.display = anyLeftover ? 'block' : 'none';
+  $('giveHeading').textContent = `${plural(spareTotal, 'spare item')} you can give away`;
+  $('giveCallout').style.display = spareTotal > 0 ? 'block' : 'none';
 
-  // bottleneck callout: items at 0 stock that at least one card needs
+  // blocked cards: items at 0 stock that at least one unlocked card needs
   const zeroBlockers = ITEMS.filter(item => (depot[item]||0) === 0 &&
     cards.some(c => c.items[item] !== undefined));
   const blockedCards = zeroBlockers.length
     ? cards.filter(c => zeroBlockers.some(z => c.items[z] !== undefined)).map(c => c.name)
     : [];
-  const bottleneckCallout = document.getElementById('bottleneckCallout');
+  const bottleneckCallout = $('bottleneckCallout');
   if (zeroBlockers.length){
+    const blocked = [...new Set(blockedCards)];
+    const many = zeroBlockers.length > 1;
+    $('bottleneckStatus').innerHTML = statusIcon('warning') + '<span>Blocked</span>';
+    $('bottleneckHeading').textContent =
+      `${joinAnd(zeroBlockers.map(z => ITEM_LABELS[z]))} ${many ? 'are' : 'is'} at zero and ${many ? 'block' : 'blocks'} ${plural(blocked.length, 'card')}`;
+    $('bottleneckText').textContent = `Locked out: ${blocked.join(', ')}.`;
     bottleneckCallout.style.display = 'block';
-    document.getElementById('bottleneckText').textContent =
-      `${zeroBlockers.map(z => ITEM_LABELS[z]).join(', ')} at zero — locking out: ${[...new Set(blockedCards)].join(', ')}.`;
   } else {
     bottleneckCallout.style.display = 'none';
   }
 
   // 3. Safest attack to fire right now (zero opportunity cost, highest points)
-  const safestCallout = document.getElementById('safestCallout');
+  const safestCallout = $('safestCallout');
   const castableNow = cards.filter(c => maxCastable(c, depot, Infinity) >= 1);
   if (castableNow.length === 0 || result.pts === 0){
     safestCallout.style.display = 'none';
@@ -1688,72 +1314,55 @@ function recalc(){
       }
     });
     safestCallout.style.display = 'block';
-    if (bestOppCost <= 0){
-      document.getElementById('safestText').textContent =
-        `Fire ${bestChoice.name} (${bestChoice.pts} pts) — it's already part of your optimal plan, so firing it now costs you nothing later.`;
-    } else {
-      document.getElementById('safestText').textContent =
-        `Fire ${bestChoice.name} (${bestChoice.pts} pts) — costs about ${bestOppCost} pts of future flexibility, the lowest of any castable option right now.`;
-    }
+    $('safestHeading').textContent = `Fire ${bestChoice.name} next`;
+    $('safestText').textContent = bestOppCost <= 0
+      ? `It is worth ${n(bestChoice.pts)} points and part of your best plan, so firing it now costs you nothing later.`
+      : `It is worth ${n(bestChoice.pts)} points and costs about ${n(bestOppCost)} points of future flexibility, the lowest of any card you can cast right now.`;
   }
 
   // 4. Energy burst
-  const energyBank = parseInt(document.getElementById('energyBank').value) || 12;
+  const energyBank = parseInt($('energyBank').value) || 12;
   const burst = bestBurstFromPlan(combo, cards, energyBank);
-  const burstBody = document.getElementById('burstBody');
-  const burstCards = document.getElementById('burstCards');
+  const burstBody = $('burstBody');
   burstBody.innerHTML = '';
-  burstCards.innerHTML = '';
   let burstEnergyTotal = 0, burstDmgTotal = 0;
   cards.forEach(c => {
     const k = burst.combo[c.name];
     if (k > 0){
       const dmgBurst = (c.dmg || 0) * k;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${c.name}</td><td class="num">${k}×</td><td class="num">${c.pts*k}</td><td class="num">${showDmg(dmgBurst)}</td><td class="num">${c.energy*k}</td>`;
+      tr.innerHTML = `<td><div class="dn">${esc(c.name)}</div></td><td class="num">${k}×</td><td class="num">${n(c.pts*k)}</td><td class="num">${n(dmgBurst)}</td><td class="num">${n(c.energy*k)}</td>`;
       burstBody.appendChild(tr);
-
-      const card = document.createElement('div');
-      card.className = 'plan-card';
-      card.innerHTML = `
-        <div class="pc-head">
-          <div class="pc-name">${c.name}</div>
-          <div class="pc-casts">${k}× cast</div>
-        </div>
-        <div class="pc-stats">
-          <div>Points: <strong>${c.pts*k}</strong></div>
-          <div>Damage: <strong>${showDmg(dmgBurst)}</strong></div>
-          <div>Energy: <strong>${c.energy*k}</strong></div>
-        </div>
-      `;
-      burstCards.appendChild(card);
       burstEnergyTotal += c.energy*k;
       burstDmgTotal += dmgBurst;
     }
   });
-  document.getElementById('burstPts').textContent = burst.pts.toLocaleString();
-  document.getElementById('burstDmg').textContent = burstDmgTotal.toLocaleString();
-  document.getElementById('burstEnergy').textContent = burstEnergyTotal.toLocaleString();
+  $('burstHeading').textContent = burst.pts > 0
+    ? `Best opener for a ${energyBank}-energy bank: ${n(burst.pts)} points`
+    : `Nothing in your plan fits a ${energyBank}-energy bank yet`;
+  $('burstPts').textContent = n(burst.pts);
+  $('burstDmg').textContent = n(burstDmgTotal);
+  $('burstEnergy').textContent = n(burstEnergyTotal);
 
   // 5. Jackpot windows
   renderJackpotWindows(combo, energyBank);
 
-  // 6. Best items to chase (debounced — runs once you stop editing)
+  // 6. Items to chase (debounced, runs once you stop editing)
   lastBaseline = result.pts;
+  syncExtras();
   scheduleChase();
 
-  // 7. Persist everything for next time you open this file
+  // 7. Persist everything for next time you open this page
   saveState();
 }
-
 document.getElementById('energyBank').addEventListener('input', recalc);
 document.getElementById('resetBtn').addEventListener('click', resetAllData);
 
 // ---------- First-run card setup ----------
 function openSetup(){
-  const rows = document.getElementById('setupRows');
+  const rows = $('setupRows');
   rows.innerHTML = '';
-  document.getElementById('setupBank').value = document.getElementById('energyBank').value || 12;
+  $('setupBank').value = $('energyBank').value || 12;
   const order = ['S','M','L','XL','XXL','A+',''];
   const groups = {};
   allCards.forEach((card, idx) => { (groups[card.cls || ''] = groups[card.cls || ''] || []).push([card, idx]); });
@@ -1766,32 +1375,24 @@ function openSetup(){
     groups[cls].forEach(([card, idx]) => {
       const row = document.createElement('div');
       row.className = 'setup-row' + (card.owned ? '' : ' off');
-      const lab = document.createElement('label');
-      lab.className = 'own';
-      const chk = document.createElement('input');
-      chk.type = 'checkbox'; chk.checked = !!card.owned; chk.dataset.idx = idx; chk.dataset.field = 'owned';
-      chk.addEventListener('change', () => row.classList.toggle('off', !chk.checked));
-      const info = document.createElement('div');
-      info.className = 'sinfo';
-      const nm = document.createElement('div'); nm.className = 'sname'; nm.textContent = card.name;
-      const meta = document.createElement('div'); meta.className = 'smeta';
-      meta.textContent = [card.rarity, `${card.dmg||0} dmg`, `${card.energy} energy`].filter(Boolean).join(' · ');
-      info.appendChild(nm); info.appendChild(meta);
-      if (card.note){ const nt = document.createElement('div'); nt.className = 'snote'; nt.textContent = card.note; info.appendChild(nt); }
-      lab.appendChild(chk); lab.appendChild(info);
-      const pl = document.createElement('label');
-      pl.className = 'spts';
-      pl.appendChild(document.createTextNode('Points'));
-      const inp = document.createElement('input');
-      inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = card.pts; inp.dataset.idx = idx; inp.dataset.field = 'pts';
-      pl.appendChild(inp);
-      row.appendChild(lab); row.appendChild(pl);
+      const meta = [card.rarity, `${card.dmg||0} dmg`, `${card.energy} energy`].filter(Boolean).join(', ');
+      row.innerHTML = `
+        <label class="own">
+          <input type="checkbox" data-idx="${idx}" data-field="owned" ${card.owned ? 'checked' : ''}>
+          <span class="sinfo">
+            <span class="sname">${esc(card.name)}</span>
+            <span class="smeta">${esc(meta)}</span>
+            ${card.note ? `<span class="snote">${statusIcon('info')}<span>${esc(card.note)}</span></span>` : ''}
+          </span>
+        </label>
+        <label class="spts">Points<input class="field" type="text" inputmode="numeric" data-idx="${idx}" data-field="pts" value="${card.pts}"></label>
+      `;
+      row.querySelector('input[type=checkbox]').addEventListener('change', e => row.classList.toggle('off', !e.target.checked));
       rows.appendChild(row);
     });
   });
-  document.getElementById('setupModal').classList.add('open');
+  $('setupModal').classList.add('open');
 }
-
 function closeSetup(){
   document.getElementById('setupModal').classList.remove('open');
   setupDone = true;
