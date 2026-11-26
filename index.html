@@ -572,25 +572,88 @@
     .masthead .brand{ max-width: none; }
   }
 
+  /* Gradient numerals: give the paint box room past the last glyph so it is never clipped */
+  .metric.hero .mv{ padding-inline-end: .12em; margin-inline-end: -.12em; }
+  .bn-name, .mv{ overflow: visible; }
+  @media (max-width: 640px){
+    .metrics-in{ grid-template-columns: repeat(4, auto); justify-content: space-between; }
+    .metric.hero .mv{ letter-spacing: -.02em; }
+  }
+  .mv, .ml{ white-space: nowrap; }
+  @media (max-width: 640px){
+    .metrics-in{ grid-template-columns: max-content repeat(3, auto); }
+  }
+  @media (max-width: 380px){
+    .metrics{ padding-inline: var(--space-2); }
+    .metrics-in{ padding: 10px 14px; gap: 6px; }
+    .metric.hero .mv{ font-size: 23px; }
+    .mv{ font-size: 18px; }
+    .ml{ font-size: 11px; }
+  }
+  .seg{ min-width: 0; }
+  .ebar-track{ min-width: 0; }
+
+  /* Header: a radar around the app icon and a live briefing */
+  .radar{ position: relative; width: 148px; height: 148px; margin-bottom: 18px; display: grid; place-items: center; border-radius: 50%; }
+  .r-grid{
+    position: absolute; inset: 0; border-radius: 50%;
+    background:
+      radial-gradient(circle, transparent 0 34%, rgba(255,176,32,.22) 34.5% 35%, transparent 35.5% 59%, rgba(255,176,32,.17) 59.5% 60%, transparent 60.5% 84%, rgba(255,176,32,.13) 84.5% 85%, transparent 85.5%),
+      linear-gradient(rgba(255,176,32,.08), rgba(255,176,32,.08)) center / 1px 100% no-repeat,
+      linear-gradient(rgba(255,176,32,.08), rgba(255,176,32,.08)) center / 100% 1px no-repeat;
+    -webkit-mask: radial-gradient(circle, #000 60%, transparent 71%); mask: radial-gradient(circle, #000 60%, transparent 71%);
+  }
+  .r-sweep{
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(255,176,32,0) 0deg, rgba(255,176,32,0) 280deg, rgba(255,176,32,.28) 359deg, rgba(255,176,32,0) 360deg);
+    -webkit-mask: radial-gradient(circle, #000 58%, transparent 70%); mask: radial-gradient(circle, #000 58%, transparent 70%);
+    animation: sweep 5s linear infinite;
+  }
+  .r-blip{ position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #ffcb3d; box-shadow: 0 0 10px rgba(255,203,61,.8); opacity: 0; animation: blip 5s linear infinite; }
+  .r-blip.b1{ top: 26%; left: 69%; animation-delay: .55s; }
+  .r-blip.b2{ top: 66%; left: 24%; animation-delay: 3.1s; }
+  .radar .app-icon{ position: relative; margin: 0; width: 60px; height: 60px; }
+  @keyframes sweep{ to{ transform: rotate(360deg); } }
+  @keyframes blip{ 0%{ opacity: 0; } 2%{ opacity: 1; } 40%{ opacity: 0; } 100%{ opacity: 0; } }
+  .eyebrow{ display: inline-flex; align-items: center; gap: 8px; }
+  .live-dot{ width: 6px; height: 6px; border-radius: 50%; background: #32d74b; box-shadow: 0 0 0 3px rgba(50,215,75,.18); }
+  body:not(.briefed) .live-dot{ display: none; }
+  .brand .gold{ background: linear-gradient(180deg, #ffd25a, #ff9a12); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; padding-inline-end: .06em; }
+  .masthead .brand{ max-width: 17ch; }
+  @media (max-width: 640px){
+    .radar{ width: 116px; height: 116px; margin-bottom: 12px; }
+    .radar .app-icon{ width: 48px; height: 48px; }
+    .masthead .brand{ max-width: none; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .r-sweep{ animation: none; transform: rotate(-40deg); }
+    .r-blip{ animation: none; opacity: .8; }
+  }
+
 </style>
 </head>
 <body>
 
 <header class="page masthead">
   <div class="hero">
-    <svg class="app-icon" viewBox="0 0 64 64" aria-hidden="true">
-      <defs>
-        <linearGradient id="aiBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset="1" stop-color="#0b0b0c"/></linearGradient>
-        <linearGradient id="aiAu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd25a"/><stop offset="1" stop-color="#ff9a12"/></linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="15" fill="url(#aiBg)"/>
-      <rect x=".5" y=".5" width="63" height="63" rx="14.5" fill="none" stroke="rgba(255,255,255,.12)"/>
-      <g fill="none" stroke="url(#aiAu)" stroke-width="3.4"><circle cx="32" cy="32" r="16"/><path d="M32 9.5v10M32 44.5v10M9.5 32h10M44.5 32h10"/></g>
-      <path d="M32 26.2 37.8 32 32 37.8 26.2 32Z" fill="url(#aiAu)"/>
-    </svg>
-    <p class="eyebrow">War Room &middot; SimCity BuildIt Club Wars</p>
-    <h1 class="brand">Spend every war item on the best attack.</h1>
-    <p class="tagline">Type in what is in your depot. War Room works out the exact attack plan that earns the most war points, and keeps it up to date as you fire.</p>
+    <div class="radar" aria-hidden="true">
+      <span class="r-grid"></span>
+      <span class="r-sweep"></span>
+      <span class="r-blip b1"></span><span class="r-blip b2"></span>
+      <svg class="app-icon" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="aiBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset="1" stop-color="#0b0b0c"/></linearGradient>
+          <linearGradient id="aiAu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd25a"/><stop offset="1" stop-color="#ff9a12"/></linearGradient>
+        </defs>
+        <rect width="64" height="64" rx="15" fill="url(#aiBg)"/>
+        <rect x=".5" y=".5" width="63" height="63" rx="14.5" fill="none" stroke="rgba(255,255,255,.12)"/>
+        <g fill="none" stroke="url(#aiAu)" stroke-width="3.4"><circle cx="32" cy="32" r="16"/><path d="M32 9.5v10M32 44.5v10M9.5 32h10M44.5 32h10"/></g>
+        <path d="M32 26.2 37.8 32 32 37.8 26.2 32Z" fill="url(#aiAu)"/>
+      </svg>
+    </div>
+    <p class="eyebrow"><span class="live-dot"></span><span id="heroEyebrow">War Room &middot; SimCity BuildIt Club Wars</span></p>
+    <h1 class="brand" id="heroTitle">Spend every war item on the best attack.</h1>
+    <p class="tagline" id="heroSub">Type in what is in your depot. War Room works out the exact attack plan that earns the most war points, and keeps it up to date as you fire.</p>
     <ul class="facts">
       <li>Exact plan, not an estimate</li>
       <li>Saved on your device</li>
@@ -1574,9 +1637,12 @@ function renderEnergyBar(rows, totalEnergy){
   if (!rows.length || totalEnergy <= 0){ wrap.hidden = true; return; }
   const bank = parseInt($('energyBank').value) || 12;
   let html = '';
+  const casts = rows.reduce((t, r) => t + r.count, 0);
+  const perCast = casts <= 30; // big plans get one segment per disaster so the bar stays readable
   rows.forEach((r, i) => {
-    for (let k = 0; k < r.count; k++){
-      html += `<span class="seg${i % 2 ? ' alt' : ''}" style="flex-grow:${r.card.energy}" title="${escAttr(r.card.name)}, ${r.card.energy} energy"></span>`;
+    const n = perCast ? r.count : 1, e = perCast ? r.card.energy : r.card.energy * r.count;
+    for (let k = 0; k < n; k++){
+      html += `<span class="seg${i % 2 ? ' alt' : ''}" style="flex-grow:${e}" title="${escAttr(r.card.name)}${perCast ? '' : ' ×' + r.count}, ${e} energy"></span>`;
     }
   });
   html = html.replace(/class="seg([^"]*)"(?![\s\S]*class="seg)/, 'class="seg$1 last"');
@@ -1591,7 +1657,23 @@ function renderEnergyBar(rows, totalEnergy){
 }
 
 // Phone dock: the next attack to fire, pinned under your thumb.
+const HERO_DEFAULT = { eyebrow: 'War Room · SimCity BuildIt Club Wars', title: $('heroTitle').innerHTML, sub: $('heroSub').textContent };
+function updateBriefing(pts, attacks, energy){
+  if (pts > 0){
+    $('heroEyebrow').textContent = 'Your war briefing';
+    $('heroTitle').innerHTML = `Your depot is worth <span class="gold">${Number(pts).toLocaleString()} war points.</span>`;
+    $('heroSub').textContent = `${plural(attacks, 'attack')} across ${Number(energy).toLocaleString()} energy.` + (lastNext ? ` Open with ${lastNext.name}.` : '');
+    document.body.classList.add('briefed');
+  } else {
+    $('heroEyebrow').textContent = HERO_DEFAULT.eyebrow;
+    $('heroTitle').innerHTML = HERO_DEFAULT.title;
+    $('heroSub').textContent = HERO_DEFAULT.sub;
+    document.body.classList.remove('briefed');
+  }
+}
+let lastNext = null;
 function setDock(card){
+  lastNext = card;
   const dock = $('fireDock');
   if (!card){ dock.hidden = true; $('barNext').hidden = true; document.body.classList.remove('has-dock'); return; }
   $('barNextName').textContent = `${card.name} · ${Number(card.pts).toLocaleString()} pts`;
@@ -1770,6 +1852,9 @@ function recalc(){
   lastBaseline = result.pts;
   syncExtras();
   scheduleChase();
+
+  // Briefing: the header states where you stand, in one sentence
+  updateBriefing(result.pts, totalAttacks, totalEnergy);
 
   // 7. Persist everything for next time you open this page
   saveState();
