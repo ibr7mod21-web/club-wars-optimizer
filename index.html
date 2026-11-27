@@ -257,7 +257,7 @@
   /* Plan: firing order and energy bar */
   th.ord, td.ord{ width: 1%; padding-inline-end: 4px; }
   .nb{ display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--fill); color: var(--text-secondary); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  #planBody tr:first-child .nb{ background: linear-gradient(180deg, #ffcb3d, #ffa51f); color: #000; }
+  #planBody tr.first .nb{ background: linear-gradient(180deg, #ffcb3d, #ffa51f); color: #000; }
   #planBody td:nth-child(4), #burstBody td:nth-child(3){ color: var(--pts); font-weight: 600; }
   #planBody td:nth-child(5), #burstBody td:nth-child(4){ color: var(--dmg); }
   #planBody td:nth-child(6), #burstBody td:nth-child(5){ color: var(--energy); }
@@ -630,6 +630,32 @@
     .r-blip{ animation: none; opacity: .8; }
   }
 
+  /* Plan sort: a segmented control above the table, headers sort too */
+  .plan-sort{ display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 var(--space-3); border-radius: 999px; background: rgba(255,255,255,.05); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .plan-sort::-webkit-scrollbar{ display: none; }
+  .plan-sort button{
+    flex: none; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent;
+    color: var(--text-secondary); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap;
+    transition: background-color 160ms var(--ease), color 160ms var(--ease);
+  }
+  .plan-sort button:hover{ color: var(--text); }
+  .plan-sort button[aria-pressed="true"]{ background: var(--fill-hover); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  .plan-sort button[data-dir="desc"]::after{ content: " ↓"; }
+  .plan-sort button[data-dir="asc"]::after{ content: " ↑"; }
+  #planTable th.sortable{ cursor: pointer; user-select: none; transition: color 160ms var(--ease); }
+  #planTable th.sortable:hover, #planTable th.sorted{ color: var(--text); }
+  #planTable th.ord.sortable{ text-align: center; }
+  @media (max-width: 640px){ .plan-sort{ display: flex; } .plan-sort button{ padding: 0 10px; font-size: 12px; } }
+  .stack{ grid-template-columns: minmax(0, 1fr); }
+  .plan-sort{ min-width: 0; }
+  .plan-sort .sm-only{ display: none; }
+  @media (max-width: 640px){
+    .plan-sort .sm-only{ display: inline; }
+    .plan-sort .lg-only{ display: none; }
+    .plan-sort{ justify-content: space-between; }
+    .plan-sort button{ padding: 0 8px; }
+  }
+
 </style>
 </head>
 <body>
@@ -684,7 +710,7 @@
           <ol>
             <li><b>Pick your cards.</b> Open Disaster card settings (or run the quick setup), tick every card you have unlocked, and type in the war points each one shows in game. The plan only ever uses ticked cards.</li>
             <li><b>Enter your war items.</b> Type a number next to any item, or use the minus and plus buttons. The plan recalculates on every change.</li>
-            <li><b>Read the plan.</b> Attacks are numbered in firing order, best points per energy first. If you might get interrupted mid-war, fire from number 1 down and you lose the least.</li>
+            <li><b>Read the plan.</b> Attacks are numbered in firing order, best points per energy first. If you might get interrupted mid-war, fire from number 1 down and you lose the least. To compare attacks, sort the table by points, casts, damage or energy; the numbers always keep the firing order.</li>
             <li><b>Press Fire after each cast</b> in the game. That attack's items come out of your depot and the plan updates. Tapped the wrong one? Press Undo on the message that appears.</li>
           </ol></div>
         <div class="how-col"><h4>Reading the screen</h4>
@@ -747,11 +773,18 @@
           <div class="ebar-track" id="energyTrack" role="img"></div>
           <div class="ebar-note" id="energyNote"></div>
         </div>
+        <div class="plan-sort" id="planSort" role="group" aria-label="Sort the plan">
+          <button type="button" data-sort="order"><span class="lg-only">Firing order</span><span class="sm-only">Order</span></button>
+          <button type="button" data-sort="pts">Points</button>
+          <button type="button" data-sort="casts">Casts</button>
+          <button type="button" data-sort="dmg">Damage</button>
+          <button type="button" data-sort="energy">Energy</button>
+        </div>
         <table id="planTable" style="display:none;">
           <thead>
             <tr>
-              <th class="ord"><span class="vh">Order</span></th><th>Disaster</th><th class="num col-casts">Casts</th><th class="num">Points</th>
-              <th class="num col-opt">Damage</th><th class="num col-opt">Energy</th>
+              <th class="ord sortable" data-sort="order" title="Sort by firing order">#</th><th>Disaster</th><th class="num col-casts sortable" data-sort="casts">Casts</th><th class="num sortable" data-sort="pts">Points</th>
+              <th class="num col-opt sortable" data-sort="dmg">Damage</th><th class="num col-opt sortable" data-sort="energy">Energy</th>
               <th class="act"><span class="vh">Fire</span></th>
             </tr>
           </thead>
@@ -1613,6 +1646,43 @@ function renderChase(){
   });
   table.style.display = 'table';
 }
+// Plan sort: firing order by default; points, casts, damage or energy on request. Remembered on this device.
+const PLAN_SORT_KEYS = {
+  pts:    r => r.card.pts * r.count,
+  casts:  r => r.count,
+  dmg:    r => (r.card.dmg || 0) * r.count,
+  energy: r => r.card.energy * r.count
+};
+let planSort = { key: 'order', dir: 'desc' };
+try { const s = JSON.parse(localStorage.getItem('warRoomPlanSort')); if (s && (s.key === 'order' || PLAN_SORT_KEYS[s.key])) planSort = s; } catch(e){}
+function sortPlanRows(rows){
+  const list = rows.slice();
+  if (planSort.key === 'order') return list.sort((a, b) => a.order - b.order);
+  const v = PLAN_SORT_KEYS[planSort.key], sign = planSort.dir === 'asc' ? 1 : -1;
+  return list.sort((a, b) => (v(a) - v(b)) * sign || a.order - b.order);
+}
+function setPlanSort(key){
+  if (key === 'order') planSort = { key, dir: 'desc' };
+  else planSort = { key, dir: planSort.key === key && planSort.dir === 'desc' ? 'asc' : 'desc' };
+  try { localStorage.setItem('warRoomPlanSort', JSON.stringify(planSort)); } catch(e){}
+  syncPlanSortUI();
+  recalc();
+}
+function syncPlanSortUI(){
+  document.querySelectorAll('#planSort button').forEach(b => {
+    const on = b.dataset.sort === planSort.key;
+    b.setAttribute('aria-pressed', on);
+    b.dataset.dir = on && planSort.key !== 'order' ? planSort.dir : '';
+  });
+  document.querySelectorAll('#planTable th.sortable').forEach(th => {
+    const on = th.dataset.sort === planSort.key;
+    th.setAttribute('aria-sort', on ? (planSort.key === 'order' ? 'ascending' : (planSort.dir === 'asc' ? 'ascending' : 'descending')) : 'none');
+    th.classList.toggle('sorted', on);
+  });
+}
+document.querySelectorAll('#planSort button, #planTable th.sortable').forEach(el => el.addEventListener('click', () => setPlanSort(el.dataset.sort)));
+syncPlanSortUI();
+
 // Totals roll to their new value so a change reads as a change, not a flicker.
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function rollNumber(id, to){
@@ -1698,11 +1768,12 @@ function recalc(){
     .filter(c => (combo[c.name]||0) > 0)
     .map(c => ({card:c, count: combo[c.name]}))
     .sort((a,b) => (b.card.pts/b.card.energy) - (a.card.pts/a.card.energy));
+  rows.forEach((r, i) => { r.order = i + 1; }); // firing order stays attached to each attack, whatever the view sort
 
   const planBody = $('planBody');
   planBody.innerHTML = '';
   let totalEnergy = 0, totalAttacks = 0, totalDamage = 0;
-  rows.forEach((r, i) => {
+  sortPlanRows(rows).forEach(r => {
     const c = r.card;
     const dmgEach = c.dmg || 0;
     const totalPtsCard = c.pts * r.count;
@@ -1713,8 +1784,9 @@ function recalc(){
     totalDamage += totalDmgCard;
     const shield = c.name === 'Shield Buster' ? ', strips shield' : '';
     const tr = document.createElement('tr');
+    if (r.order === 1) tr.className = 'first';
     tr.innerHTML = `
-      <td class="ord"><span class="nb">${i + 1}</span></td>
+      <td class="ord"><span class="nb">${r.order}</span></td>
       <td>
         <div class="dn">${esc(c.name)}</div>
         <div class="dm each">Each: ${n(c.pts)} pts, ${n(dmgEach)} dmg, ${n(c.energy)} energy${shield}</div>
